@@ -7,3 +7,5 @@ uploads/
 *.zip
 *.7z
 *.rar
+/package.json
+/package-lock.json
