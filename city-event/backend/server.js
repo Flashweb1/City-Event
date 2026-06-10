@@ -59,11 +59,24 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Initialize Database
+// Initialize Database (auto-detect: PG first, fallback to Firestore)
 if (USE_FIRESTORE) {
-  fsInitDB();
+  await fsInitDB().catch(err => {
+    logger.error({ err }, 'Firestore init failed');
+    process.exit(1);
+  });
 } else {
-  initDB();
+  try {
+    await initDB();
+  } catch (err) {
+    logger.warn({ err }, 'PostgreSQL unavailable, trying Firestore...');
+    try {
+      await fsInitDB();
+    } catch (fsErr) {
+      logger.error({ fsErr }, 'Both databases failed');
+      process.exit(1);
+    }
+  }
 }
 
 // ============= MIDDLEWARE =============

@@ -16,13 +16,9 @@ export const db = {
 };
 
 export const initDB = async () => {
-  try {
-    await pool.query('SELECT NOW()');
-    console.log('✅ PostgreSQL Connected');
-  } catch (err) {
-    console.error('❌ Database connection error:', err.message);
-    process.exit(1);
-  }
+  const result = await pool.query('SELECT NOW()');
+  console.log('✅ PostgreSQL Connected');
+  return result;
 };
 
 pool.on('error', (err) => {

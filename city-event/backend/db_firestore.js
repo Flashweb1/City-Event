@@ -17,11 +17,10 @@ export const initDB = async () => {
       admin.initializeApp(initOpts);
     }
     firestore = admin.firestore();
-    const ok = await firestore.collection('_health').doc('_check').get();
+    await firestore.collection('_health').doc('_check').get();
     console.log('✅ Firestore Connected');
   } catch (err) {
-    console.error('❌ Firestore connection error:', err.message);
-    process.exit(1);
+    throw new Error(`Firestore connection error: ${err.message}`);
   }
 };
 
