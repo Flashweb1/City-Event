@@ -22,8 +22,7 @@ export const initDB = async () => {
 };
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  console.warn('PostgreSQL pool error (non-fatal):', err.message);
 });
 
 export default pool;

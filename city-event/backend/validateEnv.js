@@ -6,7 +6,10 @@ export default function validateEnvironment() {
     dotenv.config();
   }
 
-  const requiredVars = ['DATABASE_URL'];
+  const requiredVars = [];
+  if (!process.env.USE_FIRESTORE || process.env.USE_FIRESTORE !== 'true') {
+    requiredVars.push('DATABASE_URL');
+  }
   const recommendedVars = [
     'JWT_SECRET', 
     'STRIPE_SECRET_KEY', 
