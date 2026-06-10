@@ -1,5 +1,3 @@
-import Redis from 'ioredis';
-
 const REDIS_URL = process.env.REDIS_URL;
 const CACHE_TTL = parseInt(process.env.CACHE_TTL || '300', 10); // 5 min default
 
@@ -7,6 +5,7 @@ let redis = null;
 let enabled = false;
 
 if (REDIS_URL) {
+  const { default: Redis } = await import('ioredis');
   redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 3,
     retryStrategy: (times) => Math.min(times * 100, 3000),

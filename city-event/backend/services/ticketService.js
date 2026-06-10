@@ -14,7 +14,8 @@ import os from 'os';
 /**
  * Process a ticket after successful registration
  * @param {Object} params
- * @param {Object} params.db - Database pool instance
+ * @param {Object} params.db - PostgreSQL pool instance (fallback)
+ * @param {Object} [params.fsdb] - Firestore adapter (preferred when USE_FIRESTORE=true)
  * @param {string} params.registrationId - The registration UUID
  * @param {string} params.eventId - Event UUID
  * @param {string} params.userId - User Firebase UID
@@ -23,20 +24,28 @@ import os from 'os';
  */
 export const processTicket = async ({
   db,
+  fsdb,
   registrationId,
   eventId,
   userId,
   qrCodeData,
   amountPaid = 0,
 }) => {
-  // Fetch user and event details
-  const [userRes, eventRes] = await Promise.all([
-    db.query('SELECT email, full_name FROM profiles WHERE id = $1', [userId]),
-    db.query('SELECT title, date_time, location FROM events WHERE id = $1', [eventId]),
-  ]);
+  let user, event;
 
-  const user = userRes.rows[0];
-  const event = eventRes.rows[0];
+  if (fsdb) {
+    [user, event] = await Promise.all([
+      fsdb.getDoc('profiles', userId),
+      fsdb.getDoc('events', eventId),
+    ]);
+  } else {
+    const [userRes, eventRes] = await Promise.all([
+      db.query('SELECT email, full_name FROM profiles WHERE id = $1', [userId]),
+      db.query('SELECT title, date_time, location FROM events WHERE id = $1', [eventId]),
+    ]);
+    user = userRes.rows[0];
+    event = eventRes.rows[0];
+  }
 
   if (!user || !event) {
     console.error('❌ Ticket processing failed: User or Event not found');
@@ -115,13 +124,21 @@ export const processTicket = async ({
 
 /**
  * Update promo code usage count
+ * @param {Object} db - PostgreSQL pool (ignored if fsdb provided)
+ * @param {string} promoId
+ * @param {Object} [opts]
+ * @param {Object} [opts.fsdb] - Firestore adapter (preferred)
  */
-export const incrementPromoUsage = async (db, promoId) => {
+export const incrementPromoUsage = async (db, promoId, opts = {}) => {
   try {
-    await db.query(
-      'UPDATE promo_codes SET times_used = times_used + 1 WHERE id = $1',
-      [promoId]
-    );
+    if (opts.fsdb) {
+      await opts.fsdb.increment('promo_codes', promoId, 'times_used', 1);
+    } else {
+      await db.query(
+        'UPDATE promo_codes SET times_used = times_used + 1 WHERE id = $1',
+        [promoId]
+      );
+    }
   } catch (err) {
     console.error('❌ Failed to increment promo usage:', err.message);
   }

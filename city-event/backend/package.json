@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "migrate": "node scripts/migrate-to-firestore.js",
+    "migrate:dry-run": "node scripts/migrate-to-firestore.js --dry-run",
+    "migrate:validate": "node scripts/migrate-to-firestore.js --validate"
   },
   "dependencies": {
     "@sentry/node": "^7.100.0",
