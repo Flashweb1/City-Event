@@ -7,9 +7,6 @@ export default function validateEnvironment() {
   }
 
   const requiredVars = [];
-  if (!process.env.USE_FIRESTORE || process.env.USE_FIRESTORE !== 'true') {
-    requiredVars.push('DATABASE_URL');
-  }
   const recommendedVars = [
     'JWT_SECRET', 
     'STRIPE_SECRET_KEY', 
