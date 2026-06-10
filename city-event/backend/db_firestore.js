@@ -8,18 +8,13 @@ let firestore;
 export const initDB = async () => {
   try {
     if (admin.apps.length === 0) {
+      const initOpts = { projectId: process.env.FIREBASE_PROJECT_ID };
       if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        admin.initializeApp({
-          credential: admin.credential.cert(
-            JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-          ),
-          projectId: process.env.FIREBASE_PROJECT_ID,
-        });
-      } else {
-        admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-        });
+        initOpts.credential = admin.credential.cert(
+          JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+        );
       }
+      admin.initializeApp(initOpts);
     }
     firestore = admin.firestore();
     const ok = await firestore.collection('_health').doc('_check').get();

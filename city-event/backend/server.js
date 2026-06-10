@@ -34,9 +34,16 @@ Sentry.init({
 });
 
 // Initialize Firebase Admin SDK
-admin.initializeApp({
-  projectId: process.env.FIREBASE_PROJECT_ID,
-});
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  });
+} else {
+  admin.initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  });
+}
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
