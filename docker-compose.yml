@@ -1,39 +1,15 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: cityevent-db
-    environment:
-      POSTGRES_DB: ${DB_NAME:-cityevent}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - cityevent
-
-  # Backend API
+  # Backend API (uses Firestore as database — no local DB needed)
   backend:
     build:
       context: ./city-event/backend
       dockerfile: Dockerfile
     container_name: cityevent-api
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3001
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-cityevent}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -42,13 +18,12 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./city-event/backend:/app
-      - /app/node_modules
+      - uploads:/app/uploads
     networks:
       - cityevent
     restart: unless-stopped
 
-  # Frontend
+  # Frontend (served by nginx)
   frontend:
     build:
       context: ./city-event/frontend
@@ -65,7 +40,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  uploads:
 
 networks:
   cityevent:

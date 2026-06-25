@@ -77,9 +77,9 @@ export const eventsAPI = {
     const headers = await getAuthHeader();
     const res = await fetch(`${API_URL}/events${query ? `?${query}` : ''}`, { headers });
     const data = await handleResponse(res);
-    // If pagination params were passed, return full response object
+    // If pagination params were passed, return full response object with data array
     if (params.page || params.limit) {
-      return data;
+      return { data: data.data || [], pagination: data.pagination };
     }
     // Backward compatibility: return just the array
     if (data.data && Array.isArray(data.data)) {

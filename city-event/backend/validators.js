@@ -155,3 +155,28 @@ export const validateEventCreation = (req, res, next) => {
 
   next();
 };
+
+// Partial validation for event updates — only validates fields that are present
+export const validateEventUpdate = (req, res, next) => {
+  const errors = {};
+  const { title, description, location, dateTime, capacity, price, category, imageUrl } = req.body;
+
+  if (title !== undefined) errors.title = validateEventTitle(title);
+  if (description !== undefined) errors.description = validateEventDescription(description);
+  if (location !== undefined) errors.location = validateEventLocation(location);
+  if (dateTime !== undefined) errors.dateTime = validateEventDateTime(dateTime);
+  if (capacity !== undefined) errors.capacity = validateEventCapacity(capacity);
+  if (price !== undefined) errors.price = validateEventPrice(price);
+  if (category !== undefined) errors.category = validateEventCategory(category);
+  if (imageUrl !== undefined) errors.imageUrl = validateImageUrl(imageUrl);
+
+  const filteredErrors = Object.fromEntries(
+    Object.entries(errors).filter(([_, v]) => v !== null)
+  );
+
+  if (Object.keys(filteredErrors).length > 0) {
+    return res.status(400).json({ error: 'Validation failed', details: filteredErrors });
+  }
+
+  next();
+};

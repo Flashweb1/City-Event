@@ -35,12 +35,7 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
+      <div className="page-loading">
         <div className="spinner" />
       </div>
     );
@@ -148,24 +143,12 @@ function AppRoutes() {
 
         {/* 404 */}
         <Route path="*" element={
-          <div style={{ 
-            textAlign: 'center',
-            padding: 'var(--spacing-xxl)',
-            minHeight: '80vh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <h1 style={{ fontSize: '6rem', marginBottom: 'var(--spacing-md)' }}>404</h1>
+          <div className="page-center">
+            <h1>404</h1>
             <h2>Page Not Found</h2>
-            <p style={{ color: 'var(--light-gray)', marginTop: 'var(--spacing-md)' }}>
-              The page you're looking for doesn't exist.
-            </p>
+            <p>The page you're looking for doesn't exist.</p>
             <a href="/">
-              <button className="btn-primary" style={{ marginTop: 'var(--spacing-lg)' }}>
-                Go Home
-              </button>
+              <button className="btn-primary">Go Home</button>
             </a>
           </div>
         } />
@@ -179,9 +162,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <Sentry.ErrorBoundary fallback={({ error }) => (
-      <div style={{ textAlign: 'center', padding: '4rem', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-        <h2 style={{ marginBottom: '1rem' }}>Something went wrong</h2>
-        <p style={{ color: 'var(--light-gray)', marginBottom: '2rem' }}>{error.message}</p>
+      <div className="error-fallback">
+        <h2>Something went wrong</h2>
+        <p>{error.message}</p>
         <button className="btn-primary" onClick={() => window.location.reload()}>Reload Page</button>
       </div>
     )}>

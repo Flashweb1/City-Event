@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "source": "city-event/backend",
+    "runtime": "nodejs20",
+    "entryPoint": "api"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

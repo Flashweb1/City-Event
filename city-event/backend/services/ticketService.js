@@ -7,6 +7,7 @@
  */
 import { sendTicketConfirmation } from './emailService.js';
 import { generateTicketPdf } from './pdfService.js';
+import { logger } from '../logger.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -14,8 +15,7 @@ import os from 'os';
 /**
  * Process a ticket after successful registration
  * @param {Object} params
- * @param {Object} params.db - PostgreSQL pool instance (fallback)
- * @param {Object} [params.fsdb] - Firestore adapter (preferred when USE_FIRESTORE=true)
+ * @param {Object} params.fsdb - Firestore adapter
  * @param {string} params.registrationId - The registration UUID
  * @param {string} params.eventId - Event UUID
  * @param {string} params.userId - User Firebase UID
@@ -23,7 +23,6 @@ import os from 'os';
  * @param {number} params.amountPaid - Amount paid (0 for free)
  */
 export const processTicket = async ({
-  db,
   fsdb,
   registrationId,
   eventId,
@@ -33,22 +32,13 @@ export const processTicket = async ({
 }) => {
   let user, event;
 
-  if (fsdb) {
-    [user, event] = await Promise.all([
-      fsdb.getDoc('profiles', userId),
-      fsdb.getDoc('events', eventId),
-    ]);
-  } else {
-    const [userRes, eventRes] = await Promise.all([
-      db.query('SELECT email, full_name FROM profiles WHERE id = $1', [userId]),
-      db.query('SELECT title, date_time, location FROM events WHERE id = $1', [eventId]),
-    ]);
-    user = userRes.rows[0];
-    event = eventRes.rows[0];
-  }
+  [user, event] = await Promise.all([
+    fsdb.getDoc('profiles', userId),
+    fsdb.getDoc('events', eventId),
+  ]);
 
   if (!user || !event) {
-    console.error('❌ Ticket processing failed: User or Event not found');
+    logger.error({ userId, eventId }, 'Ticket processing failed: User or Event not found');
     return { success: false, error: 'User or Event not found' };
   }
 
@@ -82,7 +72,7 @@ export const processTicket = async ({
       amountPaid,
     });
   } catch (err) {
-    console.warn('⚠️ PDF generation skipped:', err.message);
+    logger.warn({ err }, 'PDF generation skipped');
   }
 
   // Save PDF to temp file for email attachment
@@ -105,7 +95,7 @@ export const processTicket = async ({
     amountPaid,
     pdfAttachmentPath: pdfPath,
   }).catch(err => {
-    console.error('❌ Failed to send ticket email:', err.message);
+    logger.error({ err, userId }, 'Failed to send ticket email');
   });
 
   // Clean up temp PDF after 5 minutes
@@ -124,23 +114,14 @@ export const processTicket = async ({
 
 /**
  * Update promo code usage count
- * @param {Object} db - PostgreSQL pool (ignored if fsdb provided)
  * @param {string} promoId
- * @param {Object} [opts]
- * @param {Object} [opts.fsdb] - Firestore adapter (preferred)
+ * @param {Object} fsdb - Firestore adapter
  */
-export const incrementPromoUsage = async (db, promoId, opts = {}) => {
+export const incrementPromoUsage = async (promoId, fsdb) => {
   try {
-    if (opts.fsdb) {
-      await opts.fsdb.increment('promo_codes', promoId, 'times_used', 1);
-    } else {
-      await db.query(
-        'UPDATE promo_codes SET times_used = times_used + 1 WHERE id = $1',
-        [promoId]
-      );
-    }
+    await fsdb.increment('promo_codes', promoId, 'times_used', 1);
   } catch (err) {
-    console.error('❌ Failed to increment promo usage:', err.message);
+    logger.error({ err, promoId }, 'Failed to increment promo usage');
   }
 };
 

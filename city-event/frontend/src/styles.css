@@ -354,3 +354,54 @@ html {
 .tier-organizer {
   --tier-color: var(--electric-purple);
 }
+
+/* Page layout utilities */
+.page-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 80vh;
+  padding: var(--spacing-xxl);
+}
+
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.page-center h1 {
+  font-size: 6rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.page-center p {
+  color: var(--light-gray);
+  margin-top: var(--spacing-md);
+}
+
+.page-center .btn-primary {
+  margin-top: var(--spacing-lg);
+}
+
+.error-fallback {
+  text-align: center;
+  padding: 4rem;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.error-fallback h2 {
+  margin-bottom: 1rem;
+}
+
+.error-fallback p {
+  color: var(--light-gray);
+  margin-bottom: 2rem;
+}
