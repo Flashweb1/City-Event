@@ -1,9 +1,26 @@
-import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { motion } from 'framer-motion';
 import { registrationsAPI, ticketsAPI, waitlistAPI, billingAPI, gdprAPI } from '../utils/api';
 import { useAuth } from '../utils/auth';
 import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function MyTickets() {
   const { user } = useAuth();
@@ -17,6 +34,15 @@ export default function MyTickets() {
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const toast = useToast();
+
+  const handleCloseModal = useCallback(() => setSelectedTicket(null), []);
+
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const onKey = (e) => { if (e.key === 'Escape') handleCloseModal(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedTicket, handleCloseModal]);
 
   const handleDownloadPdf = async (ticketId, eventTitle, e) => {
     e.stopPropagation();
@@ -103,58 +129,65 @@ export default function MyTickets() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    registrationsAPI.getMyTickets()
-      .then(setTickets)
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        minHeight: '80vh'
-      }}>
+      <div className="page-loading">
         <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', padding: 'var(--spacing-xl) 0' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="section-elevated"
+      style={{ minHeight: '100vh' }}
+    >
+      <Helmet><title>My Tickets — City Event</title></Helmet>
       <div className="container">
-        <h1 className="gradient-text" style={{ 
-          textAlign: 'center',
-          marginBottom: 'var(--spacing-xl)'
-        }}>
+        <motion.h1
+          className="section-title neon-text-cyan"
+          style={{ textAlign: 'center', marginBottom: '3rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           MY TICKETS
-        </h1>
+        </motion.h1>
 
         {tickets.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: 'var(--spacing-xxl)',
-            color: 'var(--light-gray)'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: 'var(--spacing-md)' }}>🎫</div>
-            <h3>No tickets yet</h3>
-            <p style={{ marginBottom: 'var(--spacing-lg)' }}>
+          <motion.div
+            className="section-header"
+            style={{ padding: '4rem 0' }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+          >
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎫</div>
+            <h3 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>No tickets yet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem' }}>
               Register for events to get your tickets
             </p>
             <a href="/events">
               <button className="btn-primary">Browse Events</button>
             </a>
-          </div>
+          </motion.div>
         ) : (
-          <div className="grid grid-2">
+          <motion.div
+            className="grid grid-2"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {tickets.map(ticket => (
-              <div 
+              <motion.div
                 key={ticket.id}
-                className="card"
-                style={{ cursor: 'pointer' }}
+                className="ticket-card"
+                style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }}
+                variants={staggerItem}
                 onClick={() => setSelectedTicket(ticket)}
               >
                 <div style={{
@@ -164,35 +197,35 @@ export default function MyTickets() {
                 }}>
                   <div style={{
                     position: 'absolute',
-                    top: 'var(--spacing-sm)',
-                    right: 'var(--spacing-sm)',
+                    top: '0.75rem',
+                    right: '0.75rem',
                     background: ticket.checkedIn ? 'var(--neon-cyan)' : 'var(--neon-yellow)',
-                    color: 'var(--deep-black)',
+                    color: 'var(--bg-deep)',
                     padding: '0.5rem 1rem',
                     borderRadius: 'var(--radius-sm)',
                     fontSize: '0.75rem',
-                    fontWeight: '700',
+                    fontWeight: 700,
                     textTransform: 'uppercase'
                   }}>
                     {ticket.checkedIn ? '✓ Checked In' : 'Valid Ticket'}
                   </div>
                 </div>
 
-                <div style={{ padding: 'var(--spacing-md)' }}>
-                  <h3 style={{ 
+                <div style={{ padding: '1.25rem' }}>
+                  <h3 style={{
                     fontSize: '1.3rem',
-                    marginBottom: 'var(--spacing-sm)',
-                    color: 'var(--pure-white)'
+                    marginBottom: '0.75rem',
+                    color: '#ffffff'
                   }}>
                     {ticket.event.title}
                   </h3>
 
-                  <div style={{ 
+                  <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 'var(--spacing-xs)',
-                    marginBottom: 'var(--spacing-md)',
-                    color: 'var(--light-gray)',
+                    gap: '0.35rem',
+                    marginBottom: '1rem',
+                    color: 'rgba(255,255,255,0.5)',
                     fontSize: '0.9rem'
                   }}>
                     <div>📅 {new Date(ticket.event.dateTime).toLocaleDateString()}</div>
@@ -225,26 +258,36 @@ export default function MyTickets() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Billing / Payment Methods */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
+        <motion.div
+          className="hero-actions"
+          style={{ marginTop: '2rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           <button onClick={handlePortal} className="btn-secondary" style={{ padding: '0.75rem 2rem' }}>
             💳 Manage Payment Methods
           </button>
-        </div>
+        </motion.div>
 
-        {/* GDPR / Privacy */}
-        <div style={{
-          textAlign: 'center', marginBottom: 'var(--spacing-xl)',
-          padding: 'var(--spacing-lg)', background: 'var(--dark-gray)',
-          borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)'
-        }}>
-          <h3 style={{ marginBottom: 'var(--spacing-md)', color: 'var(--light-gray)' }}>Privacy & Data</h3>
-          <div style={{ display: 'flex', gap: 'var(--spacing-md)', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Privacy Section */}
+        <motion.div
+          className="profile-card"
+          style={{ border: '1px solid rgba(255, 0, 110, 0.15)' }}
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <h3 style={{ marginBottom: '1rem', color: 'rgba(255,255,255,0.7)' }}>Privacy & Data</h3>
+          <div className="hero-actions">
             <button onClick={handleExportData} disabled={exporting} className="btn-secondary" style={{ padding: '0.75rem 2rem' }}>
               {exporting ? 'Exporting...' : '📥 Export My Data (GDPR)'}
             </button>
@@ -255,37 +298,45 @@ export default function MyTickets() {
               📄 Privacy Policy
             </a>
           </div>
-        </div>
+        </motion.div>
 
         {/* Waitlist Entries */}
         {waitlistEntries.length > 0 && (
-          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-            <h2 className="gradient-text" style={{ textAlign: 'center', marginBottom: 'var(--spacing-lg)', fontSize: '1.5rem' }}>
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            <h2 className="section-title neon-text-cyan" style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
               WAITLIST
             </h2>
-            <div className="grid grid-2">
+            <motion.div
+              className="grid grid-2"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
               {waitlistEntries.map(w => (
-                <div key={w.id} className="card" style={{ opacity: 0.8 }}>
-                  <div style={{ padding: 'var(--spacing-md)' }}>
-                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--pure-white)' }}>
-                      {w.event.title}
-                    </h3>
-                    <p style={{ color: 'var(--neon-yellow)', fontSize: '0.9rem' }}>
-                      ⏳ Waiting for spot
-                    </p>
-                    <p style={{ color: 'var(--light-gray)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                      📅 {new Date(w.event.dateTime).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
+                <motion.div key={w.id} className="ticket-card" variants={staggerItem} style={{ opacity: 0.7 }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: '#ffffff' }}>
+                    {w.event.title}
+                  </h3>
+                  <p className="neon-text-yellow" style={{ fontSize: '0.9rem' }}>
+                    ⏳ Waiting for spot
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    📅 {new Date(w.event.dateTime).toLocaleDateString()}
+                  </p>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
 
         {/* QR Code Modal */}
         {selectedTicket && (
-          <div
+          <motion.div
             style={{
               position: 'fixed',
               top: 0,
@@ -300,33 +351,38 @@ export default function MyTickets() {
               padding: 'var(--spacing-md)',
               backdropFilter: 'blur(10px)'
             }}
-            onClick={() => setSelectedTicket(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleCloseModal}
           >
-            <div
+            <motion.div
+              className="glass-card-static"
               style={{
-                background: 'var(--dark-gray)',
                 padding: 'var(--spacing-xl)',
-                borderRadius: 'var(--radius-lg)',
                 maxWidth: '500px',
                 width: '100%',
                 border: '2px solid var(--neon-cyan)',
                 boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)',
                 textAlign: 'center'
               }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 style={{ marginBottom: 'var(--spacing-md)' }}>
+              <h2 style={{ marginBottom: '1.5rem', color: '#ffffff' }}>
                 {selectedTicket.event.title}
               </h2>
 
               <div style={{
                 background: 'white',
-                padding: 'var(--spacing-lg)',
+                padding: '1.25rem',
                 borderRadius: 'var(--radius-md)',
-                marginBottom: 'var(--spacing-md)',
+                marginBottom: '1rem',
                 display: 'inline-block'
               }}>
-                <QRCodeSVG 
+                <QRCodeSVG
                   value={selectedTicket.qrCodeData}
                   size={256}
                   level="H"
@@ -335,66 +391,53 @@ export default function MyTickets() {
               </div>
 
               <div style={{
-                background: 'rgba(0, 245, 255, 0.1)',
-                padding: 'var(--spacing-md)',
+                background: 'rgba(0, 245, 255, 0.08)',
+                padding: '1rem',
                 borderRadius: 'var(--radius-sm)',
-                marginBottom: 'var(--spacing-md)'
+                marginBottom: '1rem'
               }}>
-                <p style={{ 
-                  color: 'var(--light-gray)',
-                  fontSize: '0.9rem',
-                  marginBottom: 'var(--spacing-xs)'
-                }}>
-                  <strong style={{ color: 'var(--neon-cyan)' }}>Event Details:</strong>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '0.35rem' }}>
+                  <strong className="neon-text-cyan">Event Details:</strong>
                 </p>
-                <p style={{ color: 'var(--light-gray)', fontSize: '0.9rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
                   📅 {new Date(selectedTicket.event.dateTime).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
+                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
                   })}
                 </p>
-                <p style={{ color: 'var(--light-gray)', fontSize: '0.9rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
                   ⏰ {new Date(selectedTicket.event.dateTime).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit'
+                    hour: 'numeric', minute: '2-digit'
                   })}
                 </p>
-                <p style={{ color: 'var(--light-gray)', fontSize: '0.9rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
                   📍 {selectedTicket.event.location}
                 </p>
               </div>
 
               {selectedTicket.checkedIn && (
-                <div style={{
-                  background: 'rgba(0, 245, 255, 0.1)',
+                <div className="neon-text-cyan" style={{
+                  background: 'rgba(0, 245, 255, 0.08)',
                   border: '1px solid var(--neon-cyan)',
-                  color: 'var(--neon-cyan)',
-                  padding: 'var(--spacing-sm)',
+                  padding: '0.75rem',
                   borderRadius: 'var(--radius-sm)',
-                  marginBottom: 'var(--spacing-md)',
+                  marginBottom: '1rem',
                   fontSize: '0.9rem'
                 }}>
                   ✓ Checked in at {new Date(selectedTicket.checkedInAt).toLocaleString()}
                 </div>
               )}
 
-              <p style={{ 
-                color: 'var(--light-gray)',
-                fontSize: '0.85rem',
-                marginBottom: 'var(--spacing-md)'
-              }}>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', marginBottom: '1rem' }}>
                 Show this QR code at the event entrance
               </p>
 
-              <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-md)' }}>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button
                   onClick={(e) => handleDownloadPdf(selectedTicket.id, selectedTicket.event.title, e)}
                   disabled={downloading}
                   className="btn-primary"
-                  style={{ 
-                    flex: 1, 
+                  style={{
+                    flex: 1,
                     padding: '0.75rem',
                     opacity: downloading ? 0.5 : 1,
                     cursor: downloading ? 'wait' : 'pointer'
@@ -410,10 +453,10 @@ export default function MyTickets() {
                   Close
                 </button>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

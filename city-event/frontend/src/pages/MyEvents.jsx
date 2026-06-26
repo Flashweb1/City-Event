@@ -1,9 +1,25 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { eventsAPI } from '../utils/api';
 import { useAuth } from '../utils/auth';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function MyEvents() {
   const { user } = useAuth();
@@ -27,37 +43,60 @@ export default function MyEvents() {
     return `${symbols[currency] || '$'}${parseFloat(price).toFixed(2)}`;
   };
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}><div className="spinner" /></div>;
+  if (loading) return <div className="page-loading"><div className="spinner" /></div>;
 
   return (
-    <div style={{ minHeight: '100vh', padding: 'var(--spacing-xl) 0' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="section-elevated"
+      style={{ minHeight: '100vh' }}
+    >
       <Helmet><title>My Events — City Event</title></Helmet>
-      <div className="container">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)', flexWrap: 'wrap', gap: '1rem' }}>
-          <h1 className="gradient-text" style={{ margin: 0 }}>MY EVENTS</h1>
+      <div className="container" style={{ maxWidth: '1000px' }}>
+        <motion.div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
+          <h1 className="section-title neon-text-cyan" style={{ margin: 0 }}>MY EVENTS</h1>
           <Link to="/create-event"><button className="btn-primary">+ Create Event</button></Link>
-        </div>
+        </motion.div>
 
         {events.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--spacing-xxl)', color: 'var(--light-gray)' }}>
-            <h3>No events yet</h3>
-            <p style={{ marginBottom: 'var(--spacing-lg)' }}>Create your first event to get started</p>
+          <motion.div
+            className="section-header"
+            style={{ padding: '4rem 0' }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+          >
+            <h3 style={{ color: '#ffffff' }}>No events yet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem' }}>Create your first event to get started</p>
             <Link to="/create-event"><button className="btn-primary">Create Event</button></Link>
-          </div>
+          </motion.div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+          <motion.div
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {events.map(event => (
-              <div key={event.id} style={{
-                background: 'var(--dark-gray)', padding: 'var(--spacing-lg)',
-                borderRadius: 'var(--radius-md)', border: '1px solid var(--medium-gray)',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                flexWrap: 'wrap', gap: '1rem'
-              }}>
+              <motion.div
+                key={event.id}
+                className="profile-card"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}
+                variants={staggerItem}
+              >
                 <div style={{ flex: 1, minWidth: '250px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{event.title}</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#ffffff' }}>{event.title}</h3>
                     <span style={{
-                      padding: '0.2rem 0.75rem', borderRadius: '50px', fontSize: '0.7rem', fontWeight: '700',
+                      padding: '0.2rem 0.75rem', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 700,
                       background: event.status === 'approved' ? 'rgba(0,245,255,0.15)' : event.status === 'rejected' ? 'rgba(255,0,110,0.15)' : 'rgba(255,190,11,0.15)',
                       color: event.status === 'approved' ? 'var(--neon-cyan)' : event.status === 'rejected' ? 'var(--neon-pink)' : 'var(--neon-yellow)',
                       border: `1px solid ${event.status === 'approved' ? 'var(--neon-cyan)' : event.status === 'rejected' ? 'var(--neon-pink)' : 'var(--neon-yellow)'}`
@@ -65,10 +104,10 @@ export default function MyEvents() {
                       {event.status?.toUpperCase() || 'PENDING'}
                     </span>
                   </div>
-                  <p style={{ color: 'var(--light-gray)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
                     📅 {new Date(event.dateTime).toLocaleDateString()} — 📍 {event.location}
                   </p>
-                  <p style={{ color: 'var(--light-gray)', fontSize: '0.85rem' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
                     🎟️ {event.registrationCount}/{event.capacity} registered • ✓ {event.checkedInCount} checked in
                     {event.totalRevenue > 0 && ` • 💰 ${formatPrice(event.totalRevenue, 'usd')}`}
                   </p>
@@ -78,11 +117,11 @@ export default function MyEvents() {
                   <Link to={`/dashboard/${event.id}`}><button className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Analytics</button></Link>
                   <Link to={`/attendees/${event.id}`}><button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Attendees</button></Link>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

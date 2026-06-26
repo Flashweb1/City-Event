@@ -1292,4 +1292,11 @@ app.use((req, res) => {
   });
 });
 
+// Start server for local development (Firebase Functions uses onRequest instead)
+if (!process.env.FUNCTION_NAME && !process.env.K_SERVICE) {
+  app.listen(PORT, () => {
+    logger.info(`Server running on http://localhost:${PORT} in ${NODE_ENV} mode`);
+  });
+}
+
 export const api = onRequest(app);

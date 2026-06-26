@@ -6,40 +6,37 @@ export default function Footer() {
 
   return (
     <footer style={{
-      background: 'var(--dark-gray)',
-      borderTop: '1px solid var(--medium-gray)',
+      background: '#0a0a0a',
+      borderTop: '1px solid rgba(255,255,255,0.04)',
       padding: 'var(--spacing-xxl) 0 var(--spacing-lg)',
       marginTop: 'var(--spacing-xxl)',
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Decorative background */}
       <div style={{
         position: 'absolute',
         bottom: 0,
         right: -100,
         width: '300px',
         height: '300px',
-        background: 'radial-gradient(circle, rgba(2, 132, 199, 0.05) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(0,245,255,0.04) 0%, transparent 70%)',
         borderRadius: '50%',
         zIndex: 0
       }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-        {/* Main Footer Content */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: 'var(--spacing-xl)',
           marginBottom: 'var(--spacing-xl)',
           paddingBottom: 'var(--spacing-xl)',
-          borderBottom: '1px solid var(--medium-gray)'
+          borderBottom: '1px solid rgba(255,255,255,0.06)'
         }}>
-          {/* Brand Section */}
           <div>
             <Logo size="sm" animated={false} />
             <p style={{
-              color: 'var(--light-gray)',
+              color: 'rgba(255,255,255,0.4)',
               fontSize: '0.9rem',
               marginTop: 'var(--spacing-md)',
               lineHeight: '1.6'
@@ -48,164 +45,45 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 style={{
-              color: 'var(--pure-white)',
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              marginBottom: 'var(--spacing-md)',
-              letterSpacing: '0.05em'
-            }}>
-              Product
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <Link to="/events" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Browse Events
-                </Link>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <Link to="/create-event" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Create Event
-                </Link>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Pricing
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company Links */}
-          <div>
-            <h4 style={{
-              color: 'var(--pure-white)',
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              marginBottom: 'var(--spacing-md)',
-              letterSpacing: '0.05em'
-            }}>
-              Company
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  About
-                </a>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Contact
-                </a>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Blog
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Links */}
-          <div>
-            <h4 style={{
-              color: 'var(--pure-white)',
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              marginBottom: 'var(--spacing-md)',
-              letterSpacing: '0.05em'
-            }}>
-              Legal
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Privacy
-                </a>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Terms
-                </a>
-              </li>
-              <li style={{ marginBottom: 'var(--spacing-sm)' }}>
-                <a href="#" style={{
-                  color: 'var(--light-gray)',
-                  textDecoration: 'none',
-                  transition: 'color 0.3s ease',
-                  fontSize: '0.9rem'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#0284c7'}
-                onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                  Cookies
-                </a>
-              </li>
-            </ul>
-          </div>
+          {[
+            { title: 'Product', links: [
+              { to: '/events', label: 'Browse Events' },
+              { to: '/create-event', label: 'Create Event' },
+            ]},
+            { title: 'Company', links: [
+              { to: '/about', label: 'About' },
+              { to: '/about', label: 'Contact' },
+            ]},
+            { title: 'Legal', links: [
+              { to: '/privacy', label: 'Privacy' },
+              { to: '/terms', label: 'Terms' },
+            ]},
+          ].map((group) => (
+            <div key={group.title}>
+              <h4 style={{
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                marginBottom: 'var(--spacing-md)',
+                letterSpacing: '0.08em',
+                opacity: 0.6
+              }}>
+                {group.title}
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                {group.links.map((link) => (
+                  <li key={link.label} style={{ marginBottom: 'var(--spacing-sm)' }}>
+                    <Link to={link.to} className="nav-link" style={{ fontSize: '0.9rem' }}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Bottom Bar */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -214,92 +92,41 @@ export default function Footer() {
           gap: 'var(--spacing-md)',
           textAlign: 'center'
         }}>
-          <p style={{
-            color: '#475569',
-            fontSize: '0.85rem',
-            margin: 0
-          }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', margin: 0 }}>
             © {currentYear} City Event. All rights reserved.
           </p>
 
-          {/* Social Links */}
-          <div style={{
-            display: 'flex',
-            gap: 'var(--spacing-md)',
-            justifyContent: 'center'
-          }}>
-            <a href="#" style={{
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--medium-gray)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--light-gray)',
-              textDecoration: 'none',
-              transition: 'all 0.3s ease',
-              fontSize: '1.2rem'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#0284c7';
-              e.target.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = '#e2e8f0';
-              e.target.style.color = '#475569';
-            }}
-            title="Twitter">
-              𝕏
-            </a>
-            <a href="#" style={{
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--medium-gray)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--light-gray)',
-              textDecoration: 'none',
-              transition: 'all 0.3s ease',
-              fontSize: '1.2rem'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#db2777';
-              e.target.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = '#e2e8f0';
-              e.target.style.color = '#475569';
-            }}
-            title="Instagram">
-              📷
-            </a>
-            <a href="#" style={{
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--medium-gray)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--light-gray)',
-              textDecoration: 'none',
-              transition: 'all 0.3s ease',
-              fontSize: '1.2rem'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#ca8a04';
-              e.target.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = '#e2e8f0';
-              e.target.style.color = '#475569';
-            }}
-            title="LinkedIn">
-              💼
-            </a>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            {['𝕏', '📷', '💼'].map((icon, i) => (
+              <a
+                key={i}
+                href="#"
+                className="glass"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  color: 'rgba(255,255,255,0.4)',
+                  textDecoration: 'none',
+                  fontSize: '1.1rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--neon-cyan)';
+                  e.currentTarget.style.borderColor = 'var(--neon-cyan)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                }}
+                title={['Twitter', 'Instagram', 'LinkedIn'][i]}
+              >
+                {icon}
+              </a>
+            ))}
           </div>
         </div>
       </div>

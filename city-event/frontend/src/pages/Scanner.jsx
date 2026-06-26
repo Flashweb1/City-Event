@@ -1,6 +1,13 @@
+import { Helmet } from 'react-helmet-async';
 import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { motion } from 'framer-motion';
 import { checkinAPI } from '../utils/api';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function Scanner() {
   const [scanning, setScanning] = useState(false);
@@ -52,7 +59,6 @@ export default function Scanner() {
   };
 
   const onScanSuccess = async (decodedText) => {
-    // Stop scanning immediately
     await stopScanner();
 
     try {
@@ -66,7 +72,6 @@ export default function Scanner() {
         time: new Date().toLocaleTimeString()
       });
 
-      // Auto-clear after 3 seconds and restart scanner
       setTimeout(() => {
         setResult(null);
         startScanner();
@@ -78,7 +83,6 @@ export default function Scanner() {
         time: new Date().toLocaleTimeString()
       });
 
-      // Auto-clear after 3 seconds and restart scanner
       setTimeout(() => {
         setResult(null);
         startScanner();
@@ -86,146 +90,106 @@ export default function Scanner() {
     }
   };
 
-  const onScanError = (err) => {
-    // Ignore scanning errors (happens frequently while scanning)
-  };
+  const onScanError = (err) => {};
 
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: 'var(--deep-black)',
-      padding: 'var(--spacing-md)'
-    }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="section-deep"
+      style={{ minHeight: '100vh' }}
+    >
+      <Helmet><title>QR Scanner — City Event</title></Helmet>
       <div className="container" style={{ maxWidth: '800px' }}>
-        <h1 style={{ 
-          textAlign: 'center',
-          marginBottom: 'var(--spacing-xl)',
-          fontSize: 'clamp(2rem, 5vw, 3rem)',
-          color: 'var(--pure-white)'
-        }}>
+        <motion.h1
+          className="section-title neon-text-cyan"
+          style={{ textAlign: 'center', marginBottom: '3rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           QR CODE SCANNER
-        </h1>
+        </motion.h1>
 
-        {/* Instructions */}
         {!scanning && !result && (
-          <div style={{
-            background: 'var(--dark-gray)',
-            padding: 'var(--spacing-xl)',
-            borderRadius: 'var(--radius-lg)',
-            marginBottom: 'var(--spacing-lg)',
-            textAlign: 'center',
-            border: '2px solid var(--medium-gray)',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: 'var(--spacing-md)' }}>
-              📱
-            </div>
-            <h2 style={{ marginBottom: 'var(--spacing-md)', color: 'var(--pure-white)' }}>
-              Ready to Check In Attendees
-            </h2>
-            <p style={{ 
-              color: 'var(--light-gray)',
-              marginBottom: 'var(--spacing-lg)',
-              fontSize: '1.1rem'
-            }}>
+          <motion.div
+            className="profile-card"
+            style={{ textAlign: 'center', border: '2px solid var(--glass-border)' }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+          >
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📱</div>
+            <h2 style={{ marginBottom: '1rem', color: '#ffffff' }}>Ready to Check In Attendees</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
               Scan attendee QR codes to validate tickets and check them in
             </p>
-            <button
-              onClick={startScanner}
-              className="btn-primary"
-              style={{ 
-                padding: '1.25rem 3rem',
-                fontSize: '1.1rem'
-              }}
-            >
+            <button onClick={startScanner} className="btn-primary" aria-label="Start camera scanning" style={{ padding: '1.25rem 3rem', fontSize: '1.1rem' }}>
               Start Scanning
             </button>
-          </div>
+          </motion.div>
         )}
 
-        {/* Error Message */}
         {error && (
-          <div style={{
-            background: 'rgba(219, 39, 119, 0.1)',
-            border: '2px solid #db2777',
-            color: '#db2777',
-            padding: 'var(--spacing-lg)',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: 'var(--spacing-lg)',
-            textAlign: 'center'
-          }}>
-            <h3>⚠️ {error}</h3>
-          </div>
+          <motion.div
+            className="profile-card"
+            style={{ textAlign: 'center', border: '2px solid var(--neon-pink)' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h3 style={{ color: 'var(--neon-pink)' }}>⚠️ {error}</h3>
+          </motion.div>
         )}
 
-        {/* Scanner View */}
         {scanning && (
-          <div style={{
-            background: 'var(--dark-gray)',
-            padding: 'var(--spacing-md)',
-            borderRadius: 'var(--radius-lg)',
-            border: '2px solid var(--neon-cyan)',
-            boxShadow: '0 0 30px rgba(0, 245, 255, 0.2)',
-            marginBottom: 'var(--spacing-lg)'
-          }}>
-            <div 
-              id="qr-reader" 
+          <motion.div
+            className="profile-card"
+            style={{ border: '2px solid var(--neon-cyan)', boxShadow: '0 0 30px rgba(0, 245, 255, 0.2)', animation: 'glow-pulse 2s ease-in-out infinite' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div
+              id="qr-reader"
               ref={scannerRef}
-              style={{ 
+              style={{
                 width: '100%',
                 borderRadius: 'var(--radius-md)',
                 overflow: 'hidden'
               }}
             />
             
-            <div style={{ 
-              textAlign: 'center',
-              marginTop: 'var(--spacing-md)'
-            }}>
-              <p style={{ 
-                color: 'var(--neon-cyan)',
-                marginBottom: 'var(--spacing-md)',
-                fontSize: '1.1rem',
-                fontWeight: '600'
-              }}>
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <p className="neon-text-cyan" style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>
                 🎯 Position QR code in the frame
               </p>
-              <button
-                onClick={stopScanner}
-                className="btn-secondary"
-                style={{ padding: '0.75rem 2rem' }}
-              >
+              <button onClick={stopScanner} className="btn-secondary" aria-label="Stop camera scanning" style={{ padding: '0.75rem 2rem' }}>
                 Stop Scanner
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Scan Result */}
         {result && (
-          <div style={{
-            background: result.success 
-              ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(2, 132, 199, 0.02))'
-              : 'linear-gradient(135deg, rgba(219, 39, 119, 0.1), rgba(219, 39, 119, 0.02))',
-            border: `3px solid ${result.success ? 'var(--neon-cyan)' : 'var(--neon-pink)'}`,
-            padding: 'var(--spacing-xl)',
-            borderRadius: 'var(--radius-lg)',
-            textAlign: 'center',
-            animation: 'fadeIn 0.3s ease-out',
-            boxShadow: result.success 
-              ? '0 0 40px rgba(2, 132, 199, 0.2)'
-              : '0 0 40px rgba(219, 39, 119, 0.2)'
-          }}>
-            <div style={{ 
-              fontSize: '5rem',
-              marginBottom: 'var(--spacing-md)'
-            }}>
+          <motion.div
+            className="profile-card"
+            style={{
+              textAlign: 'center',
+              border: `3px solid ${result.success ? 'var(--neon-cyan)' : 'var(--neon-pink)'}`,
+              boxShadow: result.success ? '0 0 40px rgba(0, 245, 255, 0.2)' : '0 0 40px rgba(255, 0, 110, 0.2)'
+            }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>
               {result.success ? '✓' : '✗'}
             </div>
             
-            <h2 style={{ 
-              color: result.success ? '#0284c7' : '#db2777',
-              marginBottom: 'var(--spacing-md)',
+            <h2 style={{
+              color: result.success ? 'var(--neon-cyan)' : 'var(--neon-pink)',
+              marginBottom: '1rem',
               fontSize: '2rem'
             }}>
               {result.success ? 'CHECK-IN SUCCESSFUL' : 'INVALID TICKET'}
@@ -233,81 +197,50 @@ export default function Scanner() {
 
             {result.success && (
               <>
-                <div style={{
-                  background: 'var(--medium-gray)',
-                  padding: 'var(--spacing-lg)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: 'var(--spacing-md)'
-                }}>
-                  <p style={{ 
-                    fontSize: '1.5rem',
-                    color: 'var(--pure-white)',
-                    marginBottom: 'var(--spacing-sm)',
-                    fontWeight: '600'
-                  }}>
+                <div className="glass-card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.5rem', fontWeight: 600 }}>
                     {result.attendee}
                   </p>
-                  <p style={{ 
-                    color: 'var(--light-gray)',
-                    fontSize: '1.1rem'
-                  }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' }}>
                     {result.event}
                   </p>
                 </div>
-                <p style={{ color: 'var(--light-gray)' }}>
-                  Checked in at {result.time}
-                </p>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Checked in at {result.time}</p>
               </>
             )}
 
             {!result.success && (
-              <p style={{ 
-                color: 'var(--neon-pink)',
-                fontSize: '1.1rem',
-                marginBottom: 'var(--spacing-md)'
-              }}>
+              <p className="neon-text-pink" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
                 {result.message}
               </p>
             )}
 
-            <p style={{ 
-              color: 'var(--light-gray)',
-              fontSize: '0.9rem',
-              marginTop: 'var(--spacing-lg)'
-            }}>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem', marginTop: '1.5rem' }}>
               Resuming scanner in a moment...
             </p>
-          </div>
+          </motion.div>
         )}
 
-        {/* Scanner Tips */}
-        <div style={{
-          background: 'var(--dark-gray)',
-          padding: 'var(--spacing-lg)',
-          borderRadius: 'var(--radius-md)',
-          marginTop: 'var(--spacing-xl)',
-          border: '1px solid var(--medium-gray)'
-        }}>
-          <h3 style={{ 
-            marginBottom: 'var(--spacing-md)',
-            fontSize: '1.2rem',
-            color: 'var(--neon-cyan)'
-          }}>
+        <motion.div
+          className="profile-card"
+          style={{ marginTop: '2rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem', color: 'var(--neon-cyan)' }}>
             💡 Scanner Tips
           </h3>
-          <ul style={{ 
-            color: 'var(--light-gray)',
-            lineHeight: '1.8',
-            paddingLeft: 'var(--spacing-md)'
-          }}>
+          <ul style={{ color: 'rgba(255,255,255,0.55)', lineHeight: '1.8', paddingLeft: '1.25rem' }}>
             <li>Ensure good lighting for best results</li>
             <li>Hold the QR code steady in the frame</li>
             <li>Keep camera lens clean</li>
             <li>Scanner auto-restarts after each scan</li>
             <li>Valid tickets show green, invalid show red</li>
           </ul>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

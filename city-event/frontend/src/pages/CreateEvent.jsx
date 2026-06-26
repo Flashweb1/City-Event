@@ -1,5 +1,7 @@
+import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { eventsAPI, uploadAPI } from '../utils/api';
 import { useAuth } from '../utils/auth';
 import { useToast } from '../contexts/ToastContext';
@@ -18,6 +20,11 @@ const RECURRENCE_OPTIONS = [
   { value: 'biweekly', label: 'Every 2 weeks' },
   { value: 'monthly', label: 'Every month' },
 ];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function CreateEvent() {
   const navigate = useNavigate();
@@ -44,13 +51,9 @@ export default function CreateEvent() {
   // Redirect if not organizer
   if (user && user.role !== 'organizer' && user.role !== 'admin') {
     return (
-      <div style={{ 
-        textAlign: 'center',
-        padding: 'var(--spacing-xxl)',
-        minHeight: '80vh'
-      }}>
-        <h2>Access Denied</h2>
-        <p style={{ color: 'var(--light-gray)', marginTop: 'var(--spacing-md)' }}>
+      <div className="page-center" style={{ minHeight: '80vh' }}>
+        <h2 style={{ color: '#ffffff' }}>Access Denied</h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '1rem' }}>
           Only organizers can create events.
         </p>
       </div>
@@ -108,29 +111,39 @@ export default function CreateEvent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: 'var(--spacing-xl) 0' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="section-elevated"
+      style={{ minHeight: '100vh' }}
+    >
+      <Helmet><title>Create Event — City Event</title></Helmet>
       <div className="container" style={{ maxWidth: '800px' }}>
-        <h1 className="gradient-text" style={{ 
-          textAlign: 'center',
-          marginBottom: 'var(--spacing-xl)'
-        }}>
+        <motion.h1
+          className="section-title neon-text-cyan"
+          style={{ textAlign: 'center', marginBottom: '3rem' }}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           CREATE NEW EVENT
-        </h1>
+        </motion.h1>
 
-
-
-        <form onSubmit={handleSubmit} style={{
-          background: 'var(--dark-gray)',
-          padding: 'var(--spacing-xl)',
-          borderRadius: 'var(--radius-lg)',
-          border: '2px solid var(--medium-gray)'
-        }}>
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <label style={{ 
+        <motion.form
+          onSubmit={handleSubmit}
+          className="profile-card"
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Event Title *
             </label>
@@ -142,7 +155,13 @@ export default function CreateEvent() {
               placeholder="e.g., Summer Music Festival"
               required
               style={{
-                borderColor: validationErrors.title ? 'var(--neon-pink)' : 'transparent'
+                width: '100%',
+                padding: '0.875rem 1rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: validationErrors.title ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#ffffff',
+                fontSize: '0.95rem'
               }}
             />
             {validationErrors.title && (
@@ -155,15 +174,15 @@ export default function CreateEvent() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: 'var(--spacing-md)',
-            marginBottom: 'var(--spacing-lg)'
+            gap: '1rem',
+            marginBottom: '1.5rem'
           }}>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--light-gray)',
-                fontWeight: '600'
+                marginBottom: '0.5rem',
+                color: 'rgba(255,255,255,0.7)',
+                fontWeight: 600
               }}>
                 Price
               </label>
@@ -176,7 +195,13 @@ export default function CreateEvent() {
                 min="0"
                 step="0.01"
                 style={{
-                  borderColor: validationErrors.price ? 'var(--neon-pink)' : 'transparent'
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: validationErrors.price ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.95rem'
                 }}
               />
               {validationErrors.price && (
@@ -186,11 +211,11 @@ export default function CreateEvent() {
               )}
             </div>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--light-gray)',
-                fontWeight: '600'
+                marginBottom: '0.5rem',
+                color: 'rgba(255,255,255,0.7)',
+                fontWeight: 600
               }}>
                 Currency
               </label>
@@ -201,22 +226,22 @@ export default function CreateEvent() {
                 style={{
                   width: '100%',
                   padding: '0.875rem 1rem',
-                  background: 'var(--medium-gray)',
-                  border: '2px solid transparent',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: 'var(--radius-sm)',
-                  color: 'var(--pure-white)',
-                  fontSize: '1rem',
+                  color: '#ffffff',
+                  fontSize: '0.95rem',
                   cursor: 'pointer'
                 }}
               >
                 {CURRENCIES.map(c => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
+                  <option key={c.code} value={c.code} style={{ background: '#1a1a1a' }}>{c.label}</option>
                 ))}
               </select>
             </div>
-            <p style={{ 
+            <p style={{
               fontSize: '0.85rem',
-              color: 'var(--light-gray)',
+              color: 'rgba(255,255,255,0.4)',
               gridColumn: '1 / -1',
               marginTop: '-0.5rem'
             }}>
@@ -224,12 +249,12 @@ export default function CreateEvent() {
             </p>
           </div>
 
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <label style={{ 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Description *
             </label>
@@ -241,7 +266,15 @@ export default function CreateEvent() {
               rows="5"
               required
               style={{
-                borderColor: validationErrors.description ? 'var(--neon-pink)' : 'transparent'
+                width: '100%',
+                padding: '0.875rem 1rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: validationErrors.description ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#ffffff',
+                fontSize: '0.95rem',
+                fontFamily: 'var(--font-body)',
+                resize: 'vertical'
               }}
             />
             {validationErrors.description && (
@@ -251,18 +284,18 @@ export default function CreateEvent() {
             )}
           </div>
 
-          <div style={{ 
+          <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: 'var(--spacing-md)',
-            marginBottom: 'var(--spacing-lg)'
+            gap: '1rem',
+            marginBottom: '1.5rem'
           }}>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--light-gray)',
-                fontWeight: '600'
+                marginBottom: '0.5rem',
+                color: 'rgba(255,255,255,0.7)',
+                fontWeight: 600
               }}>
                 Date & Time *
               </label>
@@ -272,9 +305,15 @@ export default function CreateEvent() {
                 value={formData.dateTime}
                 onChange={handleChange}
                 required
-                style={{ 
+                style={{
                   width: '100%',
-                  borderColor: validationErrors.dateTime ? 'var(--neon-pink)' : 'transparent'
+                  padding: '0.875rem 1rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: validationErrors.dateTime ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.95rem',
+                  colorScheme: 'dark'
                 }}
               />
               {validationErrors.dateTime && (
@@ -285,11 +324,11 @@ export default function CreateEvent() {
             </div>
 
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--light-gray)',
-                fontWeight: '600'
+                marginBottom: '0.5rem',
+                color: 'rgba(255,255,255,0.7)',
+                fontWeight: 600
               }}>
                 Capacity *
               </label>
@@ -302,7 +341,13 @@ export default function CreateEvent() {
                 min="1"
                 required
                 style={{
-                  borderColor: validationErrors.capacity ? 'var(--neon-pink)' : 'transparent'
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: validationErrors.capacity ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.95rem'
                 }}
               />
               {validationErrors.capacity && (
@@ -313,12 +358,12 @@ export default function CreateEvent() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <label style={{ 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Location *
             </label>
@@ -330,7 +375,13 @@ export default function CreateEvent() {
               placeholder="e.g., Central Park Amphitheater"
               required
               style={{
-                borderColor: validationErrors.location ? 'var(--neon-pink)' : 'transparent'
+                width: '100%',
+                padding: '0.875rem 1rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: validationErrors.location ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#ffffff',
+                fontSize: '0.95rem'
               }}
             />
             {validationErrors.location && (
@@ -340,12 +391,12 @@ export default function CreateEvent() {
             )}
           </div>
 
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <label style={{ 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Category *
             </label>
@@ -356,32 +407,37 @@ export default function CreateEvent() {
               style={{
                 width: '100%',
                 padding: '0.875rem 1rem',
-                background: 'var(--medium-gray)',
-                border: '2px solid transparent',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 'var(--radius-sm)',
-                color: 'var(--pure-white)',
-                fontSize: '1rem',
+                color: '#ffffff',
+                fontSize: '0.95rem',
                 cursor: 'pointer'
               }}
             >
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat} style={{ background: '#1a1a1a' }}>{cat}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <label style={{ 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Event Image
             </label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ flex: 1 }} />
-              {uploading && <span style={{ color: 'var(--neon-cyan)' }}>Uploading...</span>}
+              <input type="file" accept="image/*" onChange={handleImageUpload}
+                style={{
+                  flex: 1,
+                  color: '#ffffff',
+                  padding: '0.5rem 0'
+                }} />
+              {uploading && <span className="neon-text-cyan">Uploading...</span>}
             </div>
             <input
               type="url"
@@ -390,7 +446,14 @@ export default function CreateEvent() {
               onChange={handleChange}
               placeholder="Or paste image URL"
               style={{
-                borderColor: validationErrors.imageUrl ? 'var(--neon-pink)' : 'transparent'
+                width: '100%',
+                padding: '0.875rem 1rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: validationErrors.imageUrl ? '1px solid var(--neon-pink)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#ffffff',
+                fontSize: '0.95rem',
+                marginTop: '0.5rem'
               }}
             />
             {validationErrors.imageUrl && (
@@ -401,12 +464,12 @@ export default function CreateEvent() {
           </div>
 
           {/* Event Series / Recurrence */}
-          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-            <label style={{ 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
               display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              color: 'var(--light-gray)',
-              fontWeight: '600'
+              marginBottom: '0.5rem',
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600
             }}>
               Recurrence
             </label>
@@ -417,22 +480,22 @@ export default function CreateEvent() {
               style={{
                 width: '100%',
                 padding: '0.875rem 1rem',
-                background: 'var(--medium-gray)',
-                border: '2px solid transparent',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 'var(--radius-sm)',
-                color: 'var(--pure-white)',
-                fontSize: '1rem',
+                color: '#ffffff',
+                fontSize: '0.95rem',
                 cursor: 'pointer'
               }}
             >
               {RECURRENCE_OPTIONS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+                <option key={r.value} value={r.value} style={{ background: '#1a1a1a' }}>{r.label}</option>
               ))}
             </select>
-            <p style={{ 
+            <p style={{
               fontSize: '0.85rem',
-              color: 'var(--light-gray)',
-              marginTop: 'var(--spacing-xs)'
+              color: 'rgba(255,255,255,0.4)',
+              marginTop: '0.5rem'
             }}>
               Create a recurring event series — 12 instances will be generated
             </p>
@@ -452,8 +515,8 @@ export default function CreateEvent() {
           >
             {loading ? 'Creating Event...' : 'Create Event'}
           </button>
-        </form>
+        </motion.form>
       </div>
-    </div>
+    </motion.div>
   );
 }

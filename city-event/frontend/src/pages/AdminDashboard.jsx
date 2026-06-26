@@ -1,8 +1,25 @@
+import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { adminAPI } from '../utils/api';
 import { useAuth } from '../utils/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] } }),
+};
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -52,71 +69,108 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <div className="spinner" />
-    </div>;
+    return <div className="page-loading"><div className="spinner" /></div>;
   }
 
   if (error) {
-    return <div style={{ textAlign: 'center', padding: 'var(--spacing-xxl)', minHeight: '80vh' }}>
-      <h2 style={{ color: 'var(--neon-pink)' }}>Error</h2>
-      <p style={{ color: 'var(--light-gray)' }}>{error}</p>
-    </div>;
+    return (
+      <motion.div
+        className="page-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        style={{ minHeight: '80vh' }}
+      >
+        <h2 className="neon-text-pink">Error</h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{error}</p>
+      </motion.div>
+    );
   }
 
+  const statCards = analytics ? [
+    { label: 'Total Revenue', value: `$${analytics.totalRevenue.toFixed(2)}`, color: 'var(--neon-cyan)' },
+    { label: 'Tickets Sold', value: analytics.totalRegistrations, color: 'var(--neon-pink)' },
+    { label: 'Total Events', value: analytics.totalEvents, color: 'var(--neon-yellow)' },
+    { label: 'Total Users', value: analytics.totalUsers, color: '#8338ec' },
+  ] : [];
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
-      <h1 style={{ color: 'var(--neon-cyan)', marginBottom: 'var(--spacing-xl)' }}>⚙️ Admin Control Panel</h1>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="admin-container"
+      style={{ maxWidth: '1200px', margin: '0 auto' }}
+    >
+      <Helmet><title>Admin Dashboard — City Event</title></Helmet>
+      <motion.h1
+        className="section-title neon-text-cyan"
+        style={{ marginBottom: '2rem' }}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        ⚙️ Admin Control Panel
+      </motion.h1>
 
       {/* Analytics */}
       {analytics && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)'
-        }}>
-          {[
-            { label: 'Total Revenue', value: `$${analytics.totalRevenue.toFixed(2)}`, color: 'var(--neon-cyan)' },
-            { label: 'Tickets Sold', value: analytics.totalRegistrations, color: 'var(--neon-pink)' },
-            { label: 'Total Events', value: analytics.totalEvents, color: 'var(--neon-yellow)' },
-            { label: 'Total Users', value: analytics.totalUsers, color: '#8338ec' },
-          ].map(s => (
-            <div key={s.label} style={{
-              backgroundColor: 'var(--dark-gray)', padding: 'var(--spacing-lg)',
-              borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${s.color}`
-            }}>
-              <h3 style={{ color: 'var(--light-gray)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{s.label}</h3>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>{s.value}</p>
-            </div>
+        <motion.div
+          className="admin-grid"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          {statCards.map(s => (
+            <motion.div
+              key={s.label}
+              className="admin-card admin-stat"
+              style={{ borderLeft: `4px solid ${s.color}` }}
+              variants={staggerItem}
+            >
+              <div className="admin-stat-label">{s.label}</div>
+              <div className="admin-stat-value" style={{ color: s.color }}>{s.value}</div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Event Moderation */}
-      <div style={{
-        backgroundColor: 'var(--dark-gray)', padding: 'var(--spacing-lg)',
-        borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-xl)'
-      }}>
-        <h2 style={{ marginBottom: 'var(--spacing-md)' }}>
-          Pending Events {pendingEvents.length > 0 && <span style={{ color: 'var(--neon-yellow)', fontSize: '0.8em' }}>({pendingEvents.length})</span>}
+      <motion.div
+        className="admin-card"
+        style={{ marginBottom: '2rem' }}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={1}
+      >
+        <h2 style={{ marginBottom: '1rem', color: '#ffffff' }}>
+          Pending Events {pendingEvents.length > 0 && <span className="neon-text-yellow" style={{ fontSize: '0.8em' }}>({pendingEvents.length})</span>}
         </h2>
         {pendingEvents.length === 0 ? (
-          <p style={{ color: 'var(--light-gray)' }}>No events pending approval.</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)' }}>No events pending approval.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+          <motion.div
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {pendingEvents.map(event => (
-              <div key={event.id} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: 'var(--spacing-md)', background: 'var(--medium-gray)',
-                borderRadius: 'var(--radius-sm)', flexWrap: 'wrap', gap: '1rem'
-              }}>
+              <motion.div
+                key={event.id}
+                className="profile-card"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}
+                variants={staggerItem}
+              >
                 <div style={{ flex: 1, minWidth: '200px' }}>
-                  <Link to={`/events/${event.id}`} style={{ color: 'var(--pure-white)', fontWeight: '700', textDecoration: 'none' }}>
+                  <Link to={`/events/${event.id}`} style={{ color: '#ffffff', fontWeight: 700, textDecoration: 'none' }}>
                     {event.title}
                   </Link>
-                  <p style={{ color: 'var(--light-gray)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                     by {event.organizerName} | {event.category}
                   </p>
-                  <p style={{ color: 'var(--light-gray)', fontSize: '0.8rem' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
                     {new Date(event.dateTime).toLocaleDateString()} | {event.location}
                   </p>
                 </div>
@@ -128,36 +182,40 @@ export default function AdminDashboard() {
                     ✕ Reject
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* User Management */}
-      <div style={{
-        backgroundColor: 'var(--dark-gray)', padding: 'var(--spacing-lg)',
-        borderRadius: 'var(--radius-md)', overflowX: 'auto'
-      }}>
-        <h2>User Management</h2>
-        <p style={{ marginBottom: 'var(--spacing-md)', color: 'var(--light-gray)' }}>
+      <motion.div
+        className="admin-card"
+        style={{ overflowX: 'auto' }}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={2}
+      >
+        <h2 style={{ marginBottom: '0.5rem', color: '#ffffff' }}>User Management</h2>
+        <p style={{ marginBottom: '1rem', color: 'rgba(255,255,255,0.5)' }}>
           Change user permissions across the platform.
         </p>
         <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--medium-gray)' }}>
-              <th style={{ padding: '1rem' }}>Name</th>
-              <th style={{ padding: '1rem' }}>Email</th>
-              <th style={{ padding: '1rem' }}>Joined</th>
-              <th style={{ padding: '1rem' }}>Role</th>
+            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <th style={{ padding: '1rem', color: 'var(--neon-cyan)' }}>Name</th>
+              <th style={{ padding: '1rem', color: 'var(--neon-cyan)' }}>Email</th>
+              <th style={{ padding: '1rem', color: 'var(--neon-cyan)' }}>Joined</th>
+              <th style={{ padding: '1rem', color: 'var(--neon-cyan)' }}>Role</th>
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td style={{ padding: '1rem' }}>{u.fullName || u.full_name || 'Unknown'}</td>
-                <td style={{ padding: '1rem' }}>{u.email}</td>
-                <td style={{ padding: '1rem' }}>
+              <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '1rem', color: '#ffffff' }}>{u.fullName || u.full_name || 'Unknown'}</td>
+                <td style={{ padding: '1rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>{u.email}</td>
+                <td style={{ padding: '1rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
                   {new Date(u.createdAt || u.created_at).toLocaleDateString()}
                 </td>
                 <td style={{ padding: '1rem' }}>
@@ -165,14 +223,18 @@ export default function AdminDashboard() {
                     value={u.role}
                     onChange={(e) => handleRoleChange(u.id, e.target.value)}
                     style={{
-                      padding: '0.5rem 1rem', backgroundColor: 'var(--medium-gray)',
-                      color: 'var(--pure-white)', borderRadius: 'var(--radius-sm)',
-                      border: '2px solid transparent', cursor: 'pointer', fontSize: '0.9rem'
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: '#ffffff',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
                     }}
                   >
-                    <option value="student">Student</option>
-                    <option value="organizer">Organizer</option>
-                    <option value="admin">Admin</option>
+                    <option value="student" style={{ background: '#1a1a1a' }}>Student</option>
+                    <option value="organizer" style={{ background: '#1a1a1a' }}>Organizer</option>
+                    <option value="admin" style={{ background: '#1a1a1a' }}>Admin</option>
                   </select>
                 </td>
               </tr>
@@ -180,11 +242,9 @@ export default function AdminDashboard() {
           </tbody>
         </table>
         {users.length === 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--light-gray)', padding: 'var(--spacing-xl)' }}>
-            No users found
-          </p>
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '2rem' }}>No users found</p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

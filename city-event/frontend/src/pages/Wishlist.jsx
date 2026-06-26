@@ -1,7 +1,24 @@
+import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { eventsAPI } from '../utils/api';
 import { useWishlist } from '../contexts/WishlistContext';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
 
 export default function Wishlist() {
   const [wishlistEvents, setWishlistEvents] = useState([]);
@@ -26,48 +43,56 @@ export default function Wishlist() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: 'var(--spacing-xl) 0' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="section-elevated"
+      style={{ minHeight: '100vh' }}
+    >
+      <Helmet><title>My Wishlist — City Event</title></Helmet>
       <div className="container">
-        {/* Header */}
-        <div style={{ 
-          textAlign: 'center',
-          marginBottom: 'var(--spacing-xl)',
-          animation: 'slideUp 0.6s ease-out'
-        }}>
-          <h1 className="gradient-text">❤️ MY WISHLIST</h1>
-          <p style={{ color: 'var(--light-gray)', fontSize: '1.1rem', marginTop: 'var(--spacing-sm)' }}>
+        <motion.div
+          className="section-header"
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
+          <h1 className="section-title neon-text-cyan">❤️ MY WISHLIST</h1>
+          <p className="section-subtitle">
             {wishlistEvents.length} event{wishlistEvents.length !== 1 ? 's' : ''} saved
           </p>
-        </div>
+        </motion.div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <div className="section-header" style={{ padding: '3rem 0' }}>
             <div className="spinner" />
           </div>
         ) : wishlistEvents.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center',
-            padding: 'var(--spacing-xxl)',
-            color: 'var(--light-gray)',
-            animation: 'slideUp 0.6s ease-out'
-          }}>
-            <h3 style={{ fontSize: '1.8rem', marginBottom: 'var(--spacing-md)' }}>No saved events yet 💔</h3>
-            <p style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-lg)' }}>Start adding events to your wishlist!</p>
+          <motion.div
+            className="section-header"
+            style={{ padding: '4rem 0' }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+          >
+            <h3 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: '#ffffff' }}>No saved events yet 💔</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>Start adding events to your wishlist!</p>
             <Link to="/events">
-              <button className="btn-primary">
-                Browse Events
-              </button>
+              <button className="btn-primary">Browse Events</button>
             </Link>
-          </div>
+          </motion.div>
         ) : (
-          <div className="grid grid-3">
-            {wishlistEvents.map((event, idx) => (
-              <div 
-                key={event.id}
-                style={{ animation: `slideUp 0.6s ease-out ${idx * 0.05}s backwards` }}
-              >
-                <div className="card" style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  {/* Remove from Wishlist Button */}
+          <motion.div
+            className="grid grid-3"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
+            {wishlistEvents.map(event => (
+              <motion.div key={event.id} variants={staggerItem}>
+                <div className="event-card" style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -75,10 +100,10 @@ export default function Wishlist() {
                     }}
                     style={{
                       position: 'absolute',
-                      top: 'var(--spacing-sm)',
-                      left: 'var(--spacing-sm)',
+                      top: '0.75rem',
+                      left: '0.75rem',
                       zIndex: 10,
-                      background: 'rgba(255, 0, 110, 0.8)',
+                      background: 'rgba(255, 0, 110, 0.7)',
                       border: 'none',
                       borderRadius: '50%',
                       width: '40px',
@@ -87,142 +112,57 @@ export default function Wishlist() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.5rem',
-                      transition: 'all 0.3s ease',
-                      backdropFilter: 'blur(10px)'
+                      fontSize: '1.25rem',
+                      backdropFilter: 'blur(8px)',
+                      transition: 'all 0.3s ease'
                     }}
-                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
-                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
                     ❤️
                   </button>
 
-                  <Link 
+                  <Link
                     to={`/events/${event.id}`}
                     style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}
                   >
-                    <div style={{
-                      height: '220px',
-                      background: `url(${event.imageUrl}) center/cover`,
-                      position: 'relative'
-                    }}>
-                      <div style={{
-                        position: 'absolute',
-                        top: 'var(--spacing-sm)',
-                        right: 'var(--spacing-sm)',
-                        background: 'var(--neon-cyan)',
-                        color: 'var(--deep-black)',
-                        padding: '0.5rem 1rem',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.85rem',
-                        fontWeight: '700',
-                        textTransform: 'uppercase'
-                      }}>
-                        {event.category}
-                      </div>
+                    <div
+                      className="event-card-image"
+                      style={{ backgroundImage: `url(${event.imageUrl})` }}
+                    >
+                      <span className="event-card-badge">{event.category}</span>
 
                       {event.isFull && (
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'rgba(0, 0, 0, 0.5)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <div style={{
-                            background: 'var(--neon-pink)',
-                            color: 'var(--pure-white)',
-                            padding: '1rem 2rem',
-                            borderRadius: 'var(--radius-sm)',
-                            fontSize: '1rem',
-                            fontWeight: '700',
-                            textTransform: 'uppercase'
-                          }}>
-                            SOLD OUT
-                          </div>
+                        <div className="event-card-soldout">
+                          <span className="event-card-soldout-label">SOLD OUT</span>
                         </div>
                       )}
                     </div>
-                    
-                    <div style={{ padding: 'var(--spacing-md)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <h3 style={{ 
-                        fontSize: '1.3rem',
-                        marginBottom: 'var(--spacing-sm)',
-                        color: 'var(--pure-white)',
-                        lineHeight: '1.3'
-                      }}>
-                        {event.title}
-                      </h3>
-                      
-                      <p style={{ 
-                        color: 'var(--light-gray)',
-                        fontSize: '0.85rem',
-                        marginBottom: 'var(--spacing-md)',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        flex: 1
-                      }}>
-                        {event.description}
-                      </p>
 
-                      <div style={{ 
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--spacing-xs)',
-                        marginBottom: 'var(--spacing-md)',
-                        fontSize: '0.85rem'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--light-gray)' }}>
-                          <span>📅</span>
-                          <span>
-                            {new Date(event.dateTime).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                    <div className="event-card-body">
+                      <h3 className="event-card-title">{event.title}</h3>
+                      <p className="event-card-desc">{event.description}</p>
+                      <div className="event-card-footer">
+                        <div className="event-card-location">
+                          <span>📍 {event.location}</span>
+                        </div>
+                        <div className="event-card-meta">
+                          <span className="event-card-price">
+                            {event.price && event.price > 0 ? `$${event.price.toFixed(2)}` : 'FREE'}
+                          </span>
+                          <span style={{ color: event.isFull ? 'var(--neon-pink)' : 'rgba(255,255,255,0.4)', fontSize: '0.8rem', fontWeight: 500 }}>
+                            {event.registrationCount}/{event.capacity}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--light-gray)' }}>
-                          <span>📍</span>
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {event.location}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ 
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingTop: 'var(--spacing-sm)',
-                        borderTop: '1px solid var(--medium-gray)',
-                        marginTop: 'auto'
-                      }}>
-                        <span style={{ 
-                          color: 'var(--neon-yellow)',
-                          fontSize: '0.95rem',
-                          fontWeight: '700'
-                        }}>
-                          {event.price && event.price > 0 ? `$${event.price.toFixed(2)}` : 'FREE'}
-                        </span>
-                        <span style={{ 
-                          color: event.isFull ? 'var(--neon-pink)' : 'var(--neon-cyan)',
-                          fontSize: '0.75rem',
-                          fontWeight: '600'
-                        }}>
-                          {event.registrationCount}/{event.capacity}
-                        </span>
                       </div>
                     </div>
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
