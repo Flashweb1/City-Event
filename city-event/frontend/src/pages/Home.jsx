@@ -43,7 +43,7 @@ export default function Home() {
         <meta property="og:url" content={window.location.href} />
         <meta
           property="og:image"
-          content="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80"
+          content="/assets/bg.jfif"
         />
         <link rel="canonical" href={window.location.href} />
       </Helmet>

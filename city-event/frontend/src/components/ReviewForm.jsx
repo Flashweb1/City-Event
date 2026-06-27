@@ -11,7 +11,7 @@ const ReviewForm = ({ eventId, onReviewSubmitted }) => {
   const [submitting, setSubmitting] = useState(false);
 
   if (!user) {
-    return null; // Don't show the form if the user is not logged in
+    return null;
   }
 
   const getRatingEmoji = (num) => '⭐'.repeat(num) + '☆'.repeat(5 - num);
@@ -30,7 +30,7 @@ const ReviewForm = ({ eventId, onReviewSubmitted }) => {
       setComment('');
       setRating(5);
       if (onReviewSubmitted) {
-        onReviewSubmitted(); // Notify parent to refresh data
+        onReviewSubmitted();
       }
     } catch (err) {
       toast.error(err.message || 'Failed to submit review');

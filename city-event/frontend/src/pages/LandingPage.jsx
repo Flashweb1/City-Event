@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Star, ArrowRight } from 'lucide-react';
-import heroBg from '../assets/bg.jpg'; // Correct path to assets folder
 import { eventsAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSkeleton from '../components/LoadingSkeleton';
@@ -28,7 +27,7 @@ const LandingPage = () => {
     const fetchFeatured = async () => {
       setLoading(true);
       try {
-        const response = await eventsAPI.getAll({ limit: 3, page: 1 }); // Fetch 3 featured events
+        const response = await eventsAPI.getAll({ limit: 3, page: 1 });
         setFeaturedEvents(response.data);
       } catch (error) {
         toast.error('Failed to load featured events.');
@@ -36,7 +35,6 @@ const LandingPage = () => {
         setLoading(false);
       }
     };
-
     fetchFeatured();
   }, [toast]);
 
@@ -52,7 +50,11 @@ const LandingPage = () => {
       </Helmet>
 
       {/* --- Hero Section --- */}
-      <motion.section className="hero-section" style={{ backgroundImage: `url(${heroBg})` }} variants={fadeUp}>
+      <motion.section
+        className="hero-section"
+        style={{ backgroundImage: 'url(/assets/bg.jfif)' }}
+        variants={fadeUp}
+      >
         <div
           className="hero-overlay"
           style={{ background: 'linear-gradient(to top, rgba(17, 24, 39, 1) 10%, rgba(17, 24, 39, 0.7) 50%, rgba(17, 24, 39, 0.8) 100%)' }}
@@ -65,22 +67,26 @@ const LandingPage = () => {
             Discover concerts, festivals, meetups, and more.
           </motion.p>
           <motion.form
-            className="hero-search-bar"
+            className="glass"
+            style={{ borderRadius: 'var(--radius-full)', padding: '0.5rem', maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             variants={fadeUp}
             onSubmit={(e) => {
               e.preventDefault();
               navigate(`/events?search=${searchQuery}`);
             }}
           >
-            <Search color="var(--neon-cyan)" size={20} />
+            <Search color="var(--neon-cyan)" size={20} style={{ marginLeft: '0.5rem' }} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for events, artists, or venues"
-              className="hero-search-input"
+              className="modal-input"
+              style={{ flex: 1, background: 'transparent', border: 'none', marginLeft: '0.25rem', color: 'var(--pure-white)' }}
             />
-            <button type="submit" className="btn-primary hero-search-button">Find Events</button>
+            <button type="submit" className="btn-primary" style={{ flexShrink: 0, padding: '0.75rem 1.5rem' }}>
+              Find Events
+            </button>
           </motion.form>
         </div>
       </motion.section>
@@ -91,11 +97,10 @@ const LandingPage = () => {
           <h2 className="section-title">Featured Events</h2>
           <p className="section-subtitle">Handpicked events you won't want to miss.</p>
         </motion.div>
-        <div className="container event-grid">
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
           {loading
             ? <LoadingSkeleton type="card" count={3} />
-            : (
-            featuredEvents.map((event, i) => (
+            : featuredEvents.map((event, i) => (
               <motion.div key={event.id} variants={fadeUp} custom={i}>
                 <Link to={`/events/${event.id}`} className="event-card">
                   <div className="event-card-image" style={{ backgroundImage: `url(${event.imageUrl})` }}>
@@ -115,12 +120,14 @@ const LandingPage = () => {
                   </div>
                 </Link>
               </motion.div>
-            ))
-          )}
+            ))}
         </div>
-        <div className="section-footer">
-          <Link to="/events" className="btn-secondary">
-            View All Events <ArrowRight size={16} />
+        <div className="container" style={{ textAlign: 'center', marginTop: '3rem' }}>
+          <Link to="/events">
+            <button className="btn-secondary" style={{ padding: '0.8rem 2rem' }}>
+              View All Events
+              <ArrowRight size={16} style={{ marginLeft: '8px' }} />
+            </button>
           </Link>
         </div>
       </section>

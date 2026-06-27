@@ -4,8 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import SearchBar from './SearchBar';
 import Container from '../ui/Container';
 
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80';
+const HERO_IMAGE = '/assets/bg.jfif';
 
 export default function HeroSection() {
   return (
