@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { reviewsAPI } from '../utils/api';
 import { useAuth } from '../utils/auth';
 import { useToast } from '../contexts/ToastContext';
+import ReviewForm from './ReviewForm'; // Assuming we create these components
 
 const EventReviews = ({ eventId }) => {
   const { user } = useAuth();
@@ -9,11 +10,8 @@ const EventReviews = ({ eventId }) => {
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState({ totalReviews: 0, averageRating: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
   const [loading, setLoading] = useState(true);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
-  const fetchReviews = async () => {
+  const fetchReviewsAndStats = useCallback(async () => {
     try {
       const [reviewsData, statsData] = await Promise.all([
         reviewsAPI.getByEvent(eventId),
@@ -23,49 +21,33 @@ const EventReviews = ({ eventId }) => {
       setStats(statsData);
     } catch (err) {
       console.error('Failed to load reviews:', err);
+      toast.error('Failed to load reviews. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, toast]);
 
   useEffect(() => {
     if (eventId) {
-      fetchReviews();
+      fetchReviewsAndStats();
     }
-  }, [eventId]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      toast.error('Please login to leave a review');
-      return;
-    }
-    if (!comment.trim()) {
-      toast.error('Please enter a comment');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await reviewsAPI.create(eventId, { rating, comment });
-      toast.success('Review submitted successfully!');
-      setComment('');
-      setRating(5);
-      fetchReviews(); // Refresh reviews + stats
-    } catch (err) {
-      toast.error(err.message || 'Failed to submit review');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  }, [eventId, fetchReviewsAndStats]);
 
   const handleDelete = async (reviewId) => {
     if (!window.confirm('Delete this review?')) return;
+
+    const originalReviews = [...reviews];
+    // Optimistically remove the review from the UI
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+
     try {
       await reviewsAPI.delete(eventId, reviewId);
       toast.success('Review deleted');
-      fetchReviews();
+      // Silently refresh stats in the background
+      reviewsAPI.getStats(eventId).then(setStats).catch(() => {});
     } catch (err) {
+      // If the delete fails, revert the change and notify the user
+      setReviews(originalReviews);
       toast.error(err.message || 'Failed to delete review');
     }
   };
@@ -101,7 +83,7 @@ const EventReviews = ({ eventId }) => {
           <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--neon-cyan)' }}>
             {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
           </div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--light-gray)' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--medium-gray)' }}>
             {stats.totalReviews} review{stats.totalReviews !== 1 ? 's' : ''}
           </div>
         </div>
@@ -124,86 +106,14 @@ const EventReviews = ({ eventId }) => {
                   transition: 'width 0.3s ease'
                 }} />
               </div>
-              <span style={{ color: 'var(--light-gray)', fontSize: '0.8rem', minWidth: '30px' }}>{stats.distribution[star]}</span>
+              <span style={{ color: 'var(--medium-gray)', fontSize: '0.8rem', minWidth: '30px' }}>{stats.distribution[star]}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Review Form */}
-      {user && (
-        <form onSubmit={handleSubmit} style={{
-          background: 'var(--dark-gray)',
-          padding: 'var(--spacing-lg)',
-          borderRadius: 'var(--radius-md)',
-          marginBottom: 'var(--spacing-lg)',
-          border: '1px solid rgba(0, 245, 255, 0.1)'
-        }}>
-          <h4 style={{ marginBottom: 'var(--spacing-md)', color: 'var(--pure-white)' }}>Leave a Review</h4>
-          
-          <div style={{ marginBottom: 'var(--spacing-md)' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--light-gray)', fontWeight: '500' }}>
-              Rating
-            </label>
-            <select
-              value={rating}
-              onChange={(e) => setRating(Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'var(--medium-gray)',
-                border: '2px solid transparent',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--pure-white)',
-                fontSize: '1rem',
-                cursor: 'pointer'
-              }}
-            >
-              {[5, 4, 3, 2, 1].map(num => (
-                <option key={num} value={num}>
-                  {num} Star{num !== 1 ? 's' : ''} {getRatingEmoji(num)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 'var(--spacing-md)' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--light-gray)', fontWeight: '500' }}>
-              Comment
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'var(--medium-gray)',
-                border: '2px solid transparent',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--pure-white)',
-                fontSize: '1rem',
-                minHeight: '100px',
-                resize: 'vertical'
-              }}
-              placeholder="What did you think of the event?"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary"
-            style={{
-              padding: '0.75rem 2rem',
-              opacity: submitting ? 0.5 : 1,
-              cursor: submitting ? 'wait' : 'pointer'
-            }}
-          >
-            {submitting ? 'Submitting...' : 'Submit Review'}
-          </button>
-        </form>
-      )}
+      <ReviewForm eventId={eventId} onReviewSubmitted={fetchReviewsAndStats} />
 
       {!user && (
         <div style={{
@@ -236,7 +146,7 @@ const EventReviews = ({ eventId }) => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <div>
                   <span style={{ fontWeight: '600', color: 'var(--pure-white)' }}>{review.userName}</span>
-                  <span style={{ color: 'var(--light-gray)', fontSize: '0.85rem', marginLeft: '12px' }}>
+                  <span style={{ color: 'var(--medium-gray)', fontSize: '0.85rem', marginLeft: '12px' }}>
                     {new Date(review.createdAt).toLocaleDateString()}
                   </span>
                 </div>

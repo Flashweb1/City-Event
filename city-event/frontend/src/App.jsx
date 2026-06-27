@@ -15,6 +15,7 @@ import './styles.css';
 
 // Lazy-loaded pages for code splitting
 const Home = lazy(() => import('./pages/Home'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Events = lazy(() => import('./pages/Events'));
 const EventDetail = lazy(() => import('./pages/EventDetail'));
 const Login = lazy(() => import('./pages/Login'));
@@ -76,6 +77,7 @@ function AnimatedRoutes() {
       <Suspense fallback={<PageLoading />}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Home />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/wishlist" element={<Wishlist />} />
