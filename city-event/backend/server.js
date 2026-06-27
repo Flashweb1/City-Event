@@ -22,15 +22,30 @@ import cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
 import { onRequest } from 'firebase-functions/v2/https';
 
-// Validate environment configuration before starting
-validateEnvironment();
-
-// Initialize Sentry
+// Initialize Sentry FIRST so a misconfiguration can be reported before
+// the rest of the process is brought up. We initialize Sentry before
+// validating the environment so a crash in env validation still surfaces
+// to error monitoring.
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV || 'development',
   tracesSampleRate: 0.1,
 });
+
+// Validate environment configuration. If validation fails in production
+// we want to log the failure to Sentry, then exit cleanly so the process
+// manager can restart us with a fix.
+try {
+  validateEnvironment();
+} catch (envErr) {
+  logger.error({ err: envErr }, 'Environment validation failed');
+  try { Sentry.captureException(envErr); } catch { /* Sentry may not be wired */ }
+  // Give Sentry a brief moment to flush, then exit.
+  setTimeout(() => process.exit(1), 250).unref?.();
+  // Re-throw so any awaiting top-level (e.g. firebase-functions onRequest)
+  // also sees the failure.
+  throw envErr;
+}
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
@@ -74,12 +89,17 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'csrf-token', 'X-Firebase-AppCheck']
 }));
 
-// Apply rate limiting to all API routes
-app.use('/api/auth', authRateLimiter.middleware());
-app.use('/api', apiRateLimiter.middleware());
+// Apply rate limiting to all API routes.
+// `/api/auth` gets the stricter auth limiter; the general API limiter
+// skips auth routes so it is not double-applied to login/register calls.
+app.use('/api/auth', authRateLimiter);
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/')) return next();
+  return apiRateLimiter(req, res, next);
+});
 
 // Stripe Webhook — MUST be before express.json() because it needs raw body
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -112,8 +132,40 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
         }
         const currentCount = eventSnap.data().registration_count || 0;
         if (currentCount >= eventSnap.data().capacity) {
-          logger.warn({ eventId }, 'Webhook: event full, issuing refund');
-          await stripe.refunds.create({ payment_intent: session.payment_intent, reason: 'duplicate' });
+          logger.warn({ eventId, userId }, 'Webhook: event full, issuing refund and notifying user');
+          let refundId = null;
+          try {
+            const refund = await stripe.refunds.create({ payment_intent: session.payment_intent, reason: 'duplicate' });
+            refundId = refund?.id || null;
+          } catch (refundErr) {
+            logger.error({ err: refundErr, eventId, userId }, 'Webhook refund failed');
+          }
+          // Notify the user and record the refund status on their profile so
+          // the client can show a clear "refund_pending" state if they poll
+          // their account before the email arrives.
+          try {
+            const [profile, eventDoc] = await Promise.all([
+              fsdb.getDoc('profiles', userId),
+              fsdb.getDoc('events', eventId),
+            ]);
+            if (profile) {
+              await fsdb.updateDoc('profiles', userId, {
+                refund_status: refundId ? 'refunded' : 'refund_failed',
+                last_refund_event_id: eventId,
+                last_refund_at: new Date().toISOString(),
+              });
+              const { sendRefundNotification } = await import('./services/emailService.js');
+              sendRefundNotification({
+                to: profile.email,
+                attendeeName: profile.full_name,
+                eventTitle: eventDoc?.title || 'your event',
+                amountRefunded: parseFloat(amountPaid),
+                reason: 'The event was full at the time your payment was processed.',
+              }).catch(err => logger.error({ err, userId }, 'Refund notification email failed'));
+            }
+          } catch (notifyErr) {
+            logger.error({ err: notifyErr, userId }, 'Failed to record refund status / notify user');
+          }
           return;
         }
         const regRef = fsdb.collection('registrations').doc(id);
@@ -169,8 +221,9 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
     path: '/',
   },
   size: 64,
-  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
-});
+    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+    getTokenFromRequest: req => req.headers['csrf-token'],
+  });
 
 // Cookie parser for CSRF
 app.use(cookieParser());
@@ -225,7 +278,13 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
-    cb(null, allowed.test(path.extname(file.originalname).toLowerCase()));
+    const ext = path.extname(file.originalname).toLowerCase();
+    // Reject unless BOTH the extension and the declared MIME type look like an image.
+    // Extension alone is bypassable by renaming (e.g. malware.exe -> malware.jpg).
+    if (!allowed.test(ext) || !(file.mimetype && file.mimetype.startsWith('image/'))) {
+      return cb(new Error('Only image uploads are allowed'));
+    }
+    cb(null, true);
   }
 });
 
@@ -248,15 +307,17 @@ const authenticateToken = async (req, res, next) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = { id: decodedToken.uid, email: decodedToken.email, role: 'student' };
 
-      const profile = await fsdb.getDoc('profiles', decodedToken.uid);
-      if (profile) {
-        req.user.role = profile.role || 'student';
-        req.user.fullName = profile.full_name;
-      } else {
-        const fullName = decodedToken.name || decodedToken.email.split('@')[0];
-        await fsdb.setDoc('profiles', decodedToken.uid, { id: decodedToken.uid, email: decodedToken.email, full_name: fullName, role: 'student', created_at: new Date().toISOString() });
-        req.user.fullName = fullName;
-      }
+    // Look up the existing profile. We no longer auto-create a profile
+    // here — clients must call /api/auth/register explicitly so we never
+    // silently mint a database row from a valid Firebase token.
+    const profile = await fsdb.getDoc('profiles', decodedToken.uid);
+    if (profile) {
+      req.user.role = profile.role || 'student';
+      req.user.fullName = profile.full_name;
+    }
+    // If no profile exists, the user is still authenticated (req.user.id
+    // and req.user.email are set), they just have no app-level role yet.
+    // Routes that require a profile should reject with 403 in that case.
 
     next();
   } catch (error) {
@@ -462,6 +523,10 @@ app.post('/api/events', authenticateToken, requireRole('organizer', 'admin'), va
     if (recurrenceRule) {
       const startDate = new Date(dateTime);
       const now = new Date();
+      // Generate recurring instances. All instances start as 'pending' so
+      // admin moderation applies uniformly — they will be flipped to
+      // 'approved' alongside the parent event when an admin approves it
+      // (see admin event-status handler below).
       for (let i = 1; i <= 12; i++) {
         const nextDate = new Date(startDate);
         if (recurrenceRule === 'weekly') nextDate.setDate(nextDate.getDate() + i * 7);
@@ -470,7 +535,7 @@ app.post('/api/events', authenticateToken, requireRole('organizer', 'admin'), va
         else break;
         if (nextDate <= now) continue;
         const instanceId = uuidv4();
-        await fsdb.setDoc('events', instanceId, { ...eventData, id: instanceId, date_time: nextDate.toISOString(), series_id: seriesId, status: 'approved' });
+        await fsdb.setDoc('events', instanceId, { ...eventData, id: instanceId, date_time: nextDate.toISOString(), series_id: seriesId, status: 'pending' });
       }
     }
 
@@ -1078,7 +1143,27 @@ app.get('/api/admin/events/pending', authenticateToken, requireAdmin, catchAsync
 app.put('/api/admin/events/:id/status', authenticateToken, requireAdmin, catchAsync(async (req, res) => {
   const { status } = req.body;
   if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Status must be approved or rejected' });
+    const event = await fsdb.getDoc('events', req.params.id);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
     await fsdb.updateDoc('events', req.params.id, { status });
+    // If this event belongs to a series, propagate the moderation status
+    // to every other event in the series so admins don't have to approve
+    // 13 instances one at a time. Only act on events that are still
+    // 'pending' to avoid clobbering deliberate per-instance decisions.
+    if (event.series_id) {
+      const seriesSnap = await fsdb.collection('events')
+        .where('series_id', '==', event.series_id)
+        .get();
+      const batch = fsdb.batch();
+      for (const doc of seriesSnap.docs) {
+        if (doc.id === req.params.id) continue;
+        const data = doc.data();
+        if (data.status === 'pending') {
+          batch.update(doc.ref, { status });
+        }
+      }
+      await batch.commit();
+    }
     return res.json({ message: `Event ${status} successfully` });
 }));
 
@@ -1185,6 +1270,59 @@ app.get('/api/gdpr/export', authenticateToken, catchAsync(async (req, res) => {
 app.delete('/api/gdpr/delete-account', authenticateToken, catchAsync(async (req, res) => {
   const userId = req.user.id;
 
+  // Issue Stripe refunds for any paid registrations BEFORE deleting data
+  // so we still have the payment_intent_id available.
+  const paidRegsSnap = await fsdb.collection('registrations')
+    .where('user_id', '==', userId)
+    .get();
+  const refundResults = [];
+  for (const regDoc of paidRegsSnap.docs) {
+    const reg = regDoc.data();
+    if (reg.payment_intent_id && parseFloat(reg.amount_paid || 0) > 0) {
+      try {
+        const refund = await stripe.refunds.create({
+          payment_intent: reg.payment_intent_id,
+          reason: 'requested_by_customer',
+        });
+        refundResults.push({ registrationId: regDoc.id, refundId: refund.id, status: 'refunded' });
+      } catch (refundErr) {
+        logger.error({ err: refundErr, registrationId: regDoc.id }, 'GDPR: refund failed');
+        refundResults.push({ registrationId: regDoc.id, status: 'refund_failed', error: refundErr.message });
+      }
+    }
+  }
+
+  // Collect events the user organized so we can notify their attendees
+  // about the cancellation before the events disappear.
+  const eventsSnap = await fsdb.collection('events').where('organizer_id', '==', userId).get();
+  const eventDocs = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const notifications = [];
+  for (const ev of eventDocs) {
+    const attendeesSnap = await fsdb.collection('registrations')
+      .where('event_id', '==', ev.id)
+      .get();
+    const attendeeUserIds = [...new Set(attendeesSnap.docs.map(d => d.data().user_id))];
+    const attendeeProfiles = await Promise.all(
+      attendeeUserIds.map(uid => fsdb.getDoc('profiles', uid))
+    );
+    for (const profile of attendeeProfiles) {
+      if (!profile || !profile.email) continue;
+      try {
+        const { sendEventCancelledNotification } = await import('./services/emailService.js');
+        await sendEventCancelledNotification({
+          to: profile.email,
+          attendeeName: profile.full_name,
+          eventTitle: ev.title,
+          eventDate: ev.date_time,
+        });
+        notifications.push({ eventId: ev.id, userId: profile.id, status: 'notified' });
+      } catch (notifyErr) {
+        logger.error({ err: notifyErr, eventId: ev.id, userId: profile.id }, 'GDPR: cancellation notification failed');
+        notifications.push({ eventId: ev.id, userId: profile.id, status: 'notification_failed' });
+      }
+    }
+  }
+
   // Delete Firebase Auth user FIRST — if this fails, abort before deleting data
   try { await admin.auth().deleteUser(userId); }
   catch (err) {
@@ -1206,15 +1344,18 @@ app.delete('/api/gdpr/delete-account', authenticateToken, catchAsync(async (req,
       await batch.commit();
     }
   }
-  const eventsSnap = await fsdb.collection('events').where('organizer_id', '==', userId).get();
-  if (!eventsSnap.empty) {
+  if (eventsSnap.docs.length > 0) {
     const batch = fsdb.batch();
     eventsSnap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
   }
   await fsdb.deleteDoc('profiles', userId);
 
-  res.json({ message: 'Account and all associated data permanently deleted' });
+  res.json({
+    message: 'Account and all associated data permanently deleted',
+    refunds: refundResults,
+    notifications,
+  });
 }));
 
 // ============= TICKET PDF DOWNLOAD =============

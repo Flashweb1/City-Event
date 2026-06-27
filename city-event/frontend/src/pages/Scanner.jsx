@@ -15,14 +15,23 @@ export default function Scanner() {
   const [error, setError] = useState('');
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const mountedRef = useRef(true);
+  const resumeTimerRef = useRef(null);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+        resumeTimerRef.current = null;
+      }
       stopScanner();
     };
   }, []);
 
   const startScanner = async () => {
+    if (!mountedRef.current) return;
     try {
       setScanning(true);
       setError('');
@@ -41,8 +50,10 @@ export default function Scanner() {
         onScanError
       );
     } catch (err) {
-      setError('Failed to start camera. Please grant camera permissions.');
-      setScanning(false);
+      if (mountedRef.current) {
+        setError('Failed to start camera. Please grant camera permissions.');
+        setScanning(false);
+      }
     }
   };
 
@@ -55,7 +66,18 @@ export default function Scanner() {
         console.error('Error stopping scanner:', err);
       }
     }
-    setScanning(false);
+    if (mountedRef.current) setScanning(false);
+  };
+
+  const scheduleResume = () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      resumeTimerRef.current = null;
+      if (mountedRef.current) {
+        setResult(null);
+        startScanner();
+      }
+    }, 3000);
   };
 
   const onScanSuccess = async (decodedText) => {
@@ -63,7 +85,8 @@ export default function Scanner() {
 
     try {
       const response = await checkinAPI.scan(decodedText);
-      
+
+      if (!mountedRef.current) return;
       setResult({
         success: true,
         message: response.message,
@@ -72,21 +95,16 @@ export default function Scanner() {
         time: new Date().toLocaleTimeString()
       });
 
-      setTimeout(() => {
-        setResult(null);
-        startScanner();
-      }, 3000);
+      scheduleResume();
     } catch (err) {
+      if (!mountedRef.current) return;
       setResult({
         success: false,
         message: err.message || 'Invalid ticket',
         time: new Date().toLocaleTimeString()
       });
 
-      setTimeout(() => {
-        setResult(null);
-        startScanner();
-      }, 3000);
+      scheduleResume();
     }
   };
 
@@ -159,7 +177,7 @@ export default function Scanner() {
                 overflow: 'hidden'
               }}
             />
-            
+
             <div style={{ textAlign: 'center', marginTop: '1rem' }}>
               <p className="neon-text-cyan" style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>
                 🎯 Position QR code in the frame
@@ -186,7 +204,7 @@ export default function Scanner() {
             <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>
               {result.success ? '✓' : '✗'}
             </div>
-            
+
             <h2 style={{
               color: result.success ? 'var(--neon-cyan)' : 'var(--neon-pink)',
               marginBottom: '1rem',

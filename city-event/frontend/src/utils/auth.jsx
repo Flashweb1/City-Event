@@ -58,9 +58,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const setOrganizerRole = async () => {
-    // Wait for auth state to propagate, then retry a few times
+  const setOrganizerRole = async ({ onError } = {}) => {
+    // Wait for auth state to propagate, then retry a few times.
+    // Returns { success: boolean, attempts: number, lastError?: Error }
+    // so callers (and the profile page) can react to failure and offer
+    // a "Retry" action instead of silently leaving the user as a student.
     const maxRetries = 5;
+    let lastError = null;
     for (let i = 0; i < maxRetries; i++) {
       await new Promise(r => setTimeout(r, 1000));
       try {
@@ -76,21 +80,39 @@ export const AuthProvider = ({ children }) => {
           },
           body: JSON.stringify({ role: 'organizer' })
         });
-        if (res.ok) return;
+        if (res.ok) {
+          // Refresh local user state so role-aware UI updates immediately.
+          try {
+            const dbUser = await authAPI.getCurrentUser();
+            setUser(prev => prev ? { ...prev, role: dbUser.role } : prev);
+          } catch { /* profile refresh is best-effort */ }
+          return { success: true, attempts: i + 1 };
+        }
+        const text = await res.text().catch(() => '');
+        lastError = new Error(`Server returned ${res.status}: ${text || res.statusText}`);
       } catch (err) {
+        lastError = err;
         console.warn(`Organizer role retry ${i + 1}/${maxRetries}:`, err.message);
       }
     }
+    const failure = { success: false, attempts: maxRetries, lastError };
+    if (onError) {
+      try { onError(failure); } catch { /* swallow callback errors */ }
+    }
+    return failure;
   };
 
-  const register = async (userData) => {
+  const register = async (userData, { onUpgradeFailure } = {}) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
       await updateProfile(userCredential.user, { displayName: userData.fullName });
       sendEmailVerification(userCredential.user).catch(err => console.warn('Verification email error:', err));
 
       if (userData.role === 'organizer') {
-        setOrganizerRole().catch(err => console.warn('Could not set organizer role:', err));
+        // Fire-and-forget, but surface failure to the caller so the UI can
+        // show a toast and a "Retry upgrade" button on the profile page.
+        setOrganizerRole({ onError: onUpgradeFailure })
+          .catch(err => console.warn('Could not set organizer role:', err));
       }
     } catch (error) {
       throw new Error(error.message || 'Registration failed');
@@ -114,8 +136,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Exposed so the profile page can manually retry the upgrade flow.
+  const retryOrganizerUpgrade = async (onError) => setOrganizerRole({ onError });
+
   return (
-    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, loading, retryOrganizerUpgrade }}>
       {children}
     </AuthContext.Provider>
   );

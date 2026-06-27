@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
@@ -33,9 +33,32 @@ const firebaseConfig = {
 
 // Initialize Firebase and export the instances
 export const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Analytics is lazy-initialized because:
+//  1. It depends on browser APIs (IndexedDB, cookies) that don't exist in
+//     Node (tests, SSR).
+//  2. We should only start tracking after the user has granted consent
+//     (GDPR). Callers should await `enableAnalytics()` after consent.
+let analyticsInstance = null;
+let analyticsInitPromise = null;
+export const enableAnalytics = async () => {
+  if (analyticsInstance) return analyticsInstance;
+  if (analyticsInitPromise) return analyticsInitPromise;
+  analyticsInitPromise = (async () => {
+    if (typeof window === 'undefined') return null;
+    const supported = await isSupported().catch(() => false);
+    if (!supported) return null;
+    analyticsInstance = getAnalytics(app);
+    return analyticsInstance;
+  })();
+  return analyticsInitPromise;
+};
+// Backwards-compatible export — null until enableAnalytics() resolves.
+// Code that just needs "the analytics instance" can keep importing it,
+// but the value will be null in non-browser environments.
+export const analytics = null;
 
 // Initialize App Check (uses reCAPTCHA v3 site key from env)
 const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;

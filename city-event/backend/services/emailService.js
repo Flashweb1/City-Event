@@ -50,6 +50,73 @@ const getTransporter = () => {
  * @param {number} params.amountPaid - Amount paid (0 for free events)
  * @param {string} params.pdfAttachmentPath - Optional path to PDF attachment
  */
+/**
+ * Send a refund notification email.
+ * @param {Object} params
+ * @param {string} params.to
+ * @param {string} params.attendeeName
+ * @param {string} params.eventTitle
+ * @param {number} params.amountRefunded
+ * @param {string} [params.reason]
+ */
+export const sendRefundNotification = async ({ to, attendeeName, eventTitle, amountRefunded, reason = '' }) => {
+  try {
+    const mailTransport = getTransporter();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    await mailTransport.sendMail({
+      from: `"City Event" <${process.env.SMTP_FROM || 'noreply@cityevent.com'}>`,
+      to,
+      subject: `Refund processed: ${eventTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color:#0a0a0a;">Your payment was refunded</h2>
+          <p>Hi <strong>${attendeeName}</strong>,</p>
+          <p>Your payment for <strong>${eventTitle}</strong> has been refunded.</p>
+          <p><strong>Amount refunded:</strong> ${Number(amountRefunded || 0).toFixed(2)}</p>
+          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          <p>If you have any questions, please contact support.</p>
+          <a href="${frontendUrl}/my-tickets" style="display:inline-block;padding:10px 18px;background:#8338ec;color:#fff;text-decoration:none;border-radius:6px;margin-top:10px;">View my tickets</a>
+        </div>`,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Failed to send refund notification:', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+/**
+ * Send a notification that an event the user was registered for has been cancelled.
+ * @param {Object} params
+ * @param {string} params.to
+ * @param {string} params.attendeeName
+ * @param {string} params.eventTitle
+ * @param {string} [params.eventDate]
+ */
+export const sendEventCancelledNotification = async ({ to, attendeeName, eventTitle, eventDate = '' }) => {
+  try {
+    const mailTransport = getTransporter();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    await mailTransport.sendMail({
+      from: `"City Event" <${process.env.SMTP_FROM || 'noreply@cityevent.com'}>`,
+      to,
+      subject: `Event cancelled: ${eventTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color:#0a0a0a;">An event you registered for was cancelled</h2>
+          <p>Hi <strong>${attendeeName}</strong>,</p>
+          <p>The organizer has cancelled <strong>${eventTitle}</strong>${eventDate ? ` (scheduled for ${eventDate})` : ''}.</p>
+          <p>If you paid for a ticket, a refund will be processed automatically. Please allow a few business days for the refund to appear on your statement.</p>
+          <a href="${frontendUrl}/my-tickets" style="display:inline-block;padding:10px 18px;background:#8338ec;color:#fff;text-decoration:none;border-radius:6px;margin-top:10px;">View my tickets</a>
+        </div>`,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Failed to send event-cancelled notification:', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
 export const sendTicketConfirmation = async ({
   to,
   attendeeName,
@@ -109,7 +176,7 @@ export const sendTicketConfirmation = async ({
         Hello <strong>${attendeeName}</strong>,
       </p>
       <p style="font-size: 15px; color: #555; margin-bottom: 20px;">
-        Thank you for registering! Your ticket details are below. 
+        Thank you for registering! Your ticket details are below.
         You can also view this ticket anytime in your <a href="${frontendUrl}/my-tickets" style="color: #00f5ff;">account dashboard</a>.
       </p>
 
@@ -239,4 +306,6 @@ export const sendEventReminder = async ({
 export default {
   sendTicketConfirmation,
   sendEventReminder,
+  sendRefundNotification,
+  sendEventCancelledNotification,
 };

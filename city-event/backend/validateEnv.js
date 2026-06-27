@@ -6,13 +6,19 @@ export default function validateEnvironment() {
     dotenv.config();
   }
 
+  const NODE_ENV = process.env.NODE_ENV || 'development';
+
   const requiredVars = [];
+  // Stripe is mandatory in production — fall back to a placeholder in dev only.
+  if (NODE_ENV === 'production') {
+    requiredVars.push('STRIPE_SECRET_KEY');
+  }
   const recommendedVars = [
-    'JWT_SECRET', 
-    'STRIPE_SECRET_KEY', 
+    'JWT_SECRET',
+    'STRIPE_SECRET_KEY',
     'PAYSTACK_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
-    'FRONTEND_URL', 
+    'FRONTEND_URL',
     'FIREBASE_PROJECT_ID',
     'SMTP_HOST',
     'SMTP_PORT',
@@ -39,3 +45,4 @@ export default function validateEnvironment() {
 
   console.log('✅ Environment variables validated successfully.');
 }
+

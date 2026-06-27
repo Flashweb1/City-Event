@@ -39,6 +39,14 @@ const db = {
     return snap.exists ? { id: snap.id, ...snap.data() } : null;
   },
 
+  /**
+   * Fetch multiple documents by id.
+   * Invariant: `firestore.getAll(...refs)` accepts at most 30 references per call,
+   * so we chunk into batches of 10 (well under the limit) to keep the call safe
+   * regardless of how many ids the caller passes.
+   * @param {string} collection
+   * @param {string[]} ids
+   */
   getDocs: async (collection, ids) => {
     if (ids.length === 0) return [];
     const batches = [];
@@ -52,18 +60,12 @@ const db = {
   },
 
   setDoc: async (collection, id, data) => {
-    await firestore.collection(collection).doc(id).set({
-      ...data,
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    await firestore.collection(collection).doc(id).set(data);
     return { id, ...data };
   },
 
   updateDoc: async (collection, id, data) => {
-    await firestore.collection(collection).doc(id).update({
-      ...data,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    await firestore.collection(collection).doc(id).update(data);
   },
 
   deleteDoc: async (collection, id) => {

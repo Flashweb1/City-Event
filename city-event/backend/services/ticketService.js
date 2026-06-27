@@ -47,7 +47,7 @@ export const processTicket = async ({
   // For the email, we create a link to the ticket page which renders the QR
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const ticketUrl = `${frontendUrl}/my-tickets?ticket=${registrationId}`;
-  
+
   // QR code data is the raw string stored in the database
   // For email embedding, we provide the ticket URL that shows the QR code
   const eventDate = new Date(event.date_time).toLocaleDateString('en-US', {
@@ -98,15 +98,18 @@ export const processTicket = async ({
     logger.error({ err, userId }, 'Failed to send ticket email');
   });
 
-  // Clean up temp PDF after 5 minutes
+  // Clean up temp PDF after 5 minutes. unref() so this timer does not
+  // keep the Node event loop alive (important in serverless / Firebase
+  // Functions cold starts and graceful shutdowns).
   if (pdfPath) {
-    setTimeout(() => {
+    const cleanupTimer = setTimeout(() => {
       try {
         fs.unlinkSync(pdfPath);
       } catch (e) {
         // File already deleted
       }
     }, 5 * 60 * 1000);
+    if (typeof cleanupTimer.unref === 'function') cleanupTimer.unref();
   }
 
   return { success: true, ticketUrl };

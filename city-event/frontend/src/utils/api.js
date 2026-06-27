@@ -22,7 +22,11 @@ const fetchCsrfToken = async () => {
   csrfTokenPromise = fetch(`${API_URL}/csrf-token`, { credentials: 'include' })
     .then(r => r.json())
     .then(d => { csrfTokenCache = d.csrfToken; return d.csrfToken; })
-    .catch(() => null);
+    .catch(() => {
+      // Reset the in-flight promise so a later call can retry.
+      csrfTokenPromise = null;
+      return null;
+    });
   return csrfTokenPromise;
 };
 

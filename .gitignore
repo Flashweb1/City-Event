@@ -9,3 +9,5 @@ uploads/
 *.rar
 /package.json
 /package-lock.json
+# Kimi project memory
+.kimi-memory/
